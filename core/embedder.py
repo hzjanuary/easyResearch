@@ -78,6 +78,87 @@ def get_retriever(collection_name="default_notebook"):
 # CÁC HÀM QUẢN LÝ NOTEBOOK (ĐÃ CẬP NHẬT LOGIC XÓA FOLDER)
 # ---------------------------------------------------------
 
+def get_notebook_stats(notebook_name):
+    """
+    Lấy thống kê chi tiết của một Notebook:
+    - Số lượng đoạn văn (chunks)
+    - Danh sách các file nguồn
+    - Dung lượng thư mục trên ổ cứng
+    """
+    stats = {
+        "chunks": 0,
+        "files": [],
+        "size_mb": 0.0
+    }
+    
+    try:
+        if not os.path.exists(CHROMA_DIR):
+            return stats
+            
+        client = chromadb.PersistentClient(path=CHROMA_DIR)
+        
+        # Tìm collection
+        target_collection = None
+        for col in client.list_collections():
+            if col.name == notebook_name:
+                target_collection = col
+                break
+        
+        if not target_collection:
+            return stats
+        
+        # Lấy collection data
+        collection = client.get_collection(notebook_name)
+        
+        # Đếm số chunks
+        stats["chunks"] = collection.count()
+        
+        # Lấy danh sách file nguồn từ metadata
+        if stats["chunks"] > 0:
+            # Lấy tất cả metadata
+            result = collection.get(include=["metadatas"])
+            if result and result["metadatas"]:
+                sources = set()
+                for meta in result["metadatas"]:
+                    if meta and "source" in meta:
+                        sources.add(meta["source"])
+                stats["files"] = list(sources)
+        
+        # Tính dung lượng thư mục
+        collection_uuid = str(target_collection.id)
+        dir_path = os.path.join(CHROMA_DIR, collection_uuid)
+        if os.path.exists(dir_path):
+            total_size = 0
+            for dirpath, dirnames, filenames in os.walk(dir_path):
+                for f in filenames:
+                    fp = os.path.join(dirpath, f)
+                    total_size += os.path.getsize(fp)
+            stats["size_mb"] = round(total_size / (1024 * 1024), 2)
+        
+        return stats
+        
+    except Exception as e:
+        print(f"⚠️ Lỗi khi lấy thống kê notebook {notebook_name}: {e}")
+        return stats
+
+def get_total_db_size():
+    """
+    Lấy tổng dung lượng của toàn bộ database
+    """
+    try:
+        if not os.path.exists(CHROMA_DIR):
+            return 0.0
+            
+        total_size = 0
+        for dirpath, dirnames, filenames in os.walk(CHROMA_DIR):
+            for f in filenames:
+                fp = os.path.join(dirpath, f)
+                total_size += os.path.getsize(fp)
+        return round(total_size / (1024 * 1024), 2)
+    except Exception as e:
+        print(f"⚠️ Lỗi khi tính dung lượng DB: {e}")
+        return 0.0
+
 def get_all_notebooks():
     """
     Lấy danh sách tất cả các Notebook (Collection) đang có trong Database

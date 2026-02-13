@@ -4,8 +4,9 @@ import time
 
 # Import các module từ bộ não Core
 from core.loader import load_and_split_document
-from core.embedder import add_to_vector_db, get_all_notebooks, delete_notebook
+from core.embedder import add_to_vector_db, get_all_notebooks, delete_notebook, get_notebook_stats, get_total_db_size
 from core.generator import query_rag_system
+from core.summarizer import generate_notebook_summary
 
 # ---------------------------------------------------------
 # 1. Cấu hình giao diện Streamlit
@@ -142,13 +143,18 @@ with st.sidebar:
     with st.container():
         st.markdown("#### 📂 Dự án")
         existing_notebooks = get_all_notebooks()
+        total_db_size = get_total_db_size()
         
-        # Hiển thị số lượng dự án
+        # Hiển thị tổng quan Database
         st.markdown(f"""
         <div class="stats-container">
             <div class="stat-item">
                 <div class="stat-number">{len(existing_notebooks)}</div>
                 <div class="stat-label">Dự án</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{total_db_size}</div>
+                <div class="stat-label">MB tổng</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -178,15 +184,77 @@ with st.sidebar:
             
             if st.button("🗑️ Xóa dự án này", key="del_btn", type="secondary", use_container_width=True):
                 if delete_notebook(final_notebook_name):
+                    # Xóa file summary nếu có
+                    summary_path = f"database/chroma_db/{final_notebook_name}_summary.txt"
+                    if os.path.exists(summary_path):
+                        os.remove(summary_path)
                     st.success("✅ Đã xóa thành công!")
                     time.sleep(1)
                     st.rerun()
                 else:
                     st.error("❌ Không thể xóa!")
+        
+        # --- HIỂN THỊ TÓM TẮT DỰ ÁN ---
+        summary_file = f"database/chroma_db/{final_notebook_name}_summary.txt"
+        if os.path.exists(summary_file):
+            with st.expander("📄 Tóm tắt Dự án", expanded=False):
+                with open(summary_file, "r", encoding="utf-8") as f:
+                    st.markdown(f.read())
+        
+        # --- DASHBOARD THỐNG KÊ DỰ ÁN ---
+        if selected_option != "➕ Tạo mới...":
+            with st.expander("📊 Thống kê dự án", expanded=False):
+                stats = get_notebook_stats(final_notebook_name)
+                
+                # Hiển thị thống kê dạng card
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric(
+                        label="📄 Đoạn văn",
+                        value=stats["chunks"],
+                        help="Số lượng chunks trong DB"
+                    )
+                with col2:
+                    st.metric(
+                        label="📁 File nguồn",
+                        value=len(stats["files"]),
+                        help="Số tài liệu đã nạp"
+                    )
+                
+                st.metric(
+                    label="💾 Dung lượng",
+                    value=f"{stats['size_mb']} MB",
+                    help="Dung lượng trên ổ cứng"
+                )
+                
+                # Danh sách file nguồn
+                if stats["files"]:
+                    st.markdown("**Danh sách tài liệu:**")
+                    for i, f in enumerate(stats["files"], 1):
+                        st.caption(f"{i}. 📄 {f}")
     
     st.divider()
     
-    # --- PHẦN 2: NẠP TÀI LIỆU ---
+    # --- PHẦN 2: CẤU HÌNH AI ---
+    with st.expander("⚙️ Cấu hình", expanded=False):
+        user_key = st.text_input(
+            "🔑 Groq API Key",
+            type="password",
+            placeholder="gsk_...",
+            help="Để trống = dùng key mặc định"
+        )
+        
+        search_k = st.slider(
+            "🔍 Độ sâu tìm kiếm",
+            min_value=3,
+            max_value=20,
+            value=10,
+            help="Số lượng đoạn văn tham khảo"
+        )
+        
+        st.caption(f"Tìm **{search_k}** đoạn văn liên quan nhất")
+    
+    # --- PHẦN 3: NẠP TÀI LIỆU ---
     with st.expander("📥 Nạp tài liệu", expanded=True):
         uploaded_files = st.file_uploader(
             "Kéo thả hoặc chọn file",
@@ -224,35 +292,34 @@ with st.sidebar:
                     try:
                         chunks = load_and_split_document(temp_path)
                         add_to_vector_db(chunks, collection_name=final_notebook_name)
+                        
+                        # Lưu chunks để tạo summary sau
+                        if "all_chunks" not in st.session_state:
+                            st.session_state.all_chunks = []
+                        st.session_state.all_chunks.extend(chunks)
+                        
                         os.remove(temp_path)
                     except Exception as e:
                         st.error(f"❌ {uploaded_file.name}: {e}")
                     
                     progress_bar.progress((i + 1) / len(uploaded_files))
                 
+                # --- TỰ ĐỘNG TÓM TẮT SAU KHI NẠP XONG ---
+                progress_bar.progress(1.0, text="📝 Đang tạo tóm tắt...")
+                try:
+                    if "all_chunks" in st.session_state and st.session_state.all_chunks:
+                        summary = generate_notebook_summary(st.session_state.all_chunks, api_key=user_key)
+                        summary_path = f"database/chroma_db/{final_notebook_name}_summary.txt"
+                        with open(summary_path, "w", encoding="utf-8") as f:
+                            f.write(summary)
+                        st.session_state.all_chunks = []  # Reset
+                except Exception as e:
+                    st.warning(f"⚠️ Không thể tạo tóm tắt: {e}")
+                
                 progress_bar.progress(1.0, text="✅ Hoàn tất!")
                 time.sleep(1)
                 st.rerun()
 
-    # --- PHẦN 3: CẤU HÌNH AI ---
-    with st.expander("⚙️ Cấu hình", expanded=False):
-        user_key = st.text_input(
-            "🔑 Groq API Key",
-            type="password",
-            placeholder="gsk_...",
-            help="Để trống = dùng key mặc định"
-        )
-        
-        search_k = st.slider(
-            "🔍 Độ sâu tìm kiếm",
-            min_value=3,
-            max_value=20,
-            value=10,
-            help="Số lượng đoạn văn tham khảo"
-        )
-        
-        st.caption(f"Tìm **{search_k}** đoạn văn liên quan nhất")
-    
     st.divider()
     
     # --- NÚT XÓA CHAT ---
@@ -308,6 +375,7 @@ if prompt := st.chat_input("💭 Đặt câu hỏi về tài liệu của bạn.
                 result = query_rag_system(
                     prompt,
                     collection_name=final_notebook_name,
+                    chat_history=st.session_state.messages,  # Truyền lịch sử chat
                     k_target=search_k,
                     user_api_key=user_key
                 )
