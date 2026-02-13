@@ -25,6 +25,8 @@
 | ⚡ **GPU Acceleration**    | Tối ưu cho GPU NVIDIA (CUDA)                        |
 | 🔑 **API Key linh hoạt**   | Dùng key riêng hoặc key hệ thống                    |
 | 🌐 **RESTful API**         | Tích hợp dễ dàng qua FastAPI                        |
+| 🎨 **Giao diện hiện đại**  | UI gradient, collapsible panels, progress tracking  |
+| 🧹 **Quản lý chat**        | Xóa lịch sử chat, avatar user/assistant             |
 
 ## 🏗️ Kiến trúc hệ thống
 
@@ -154,11 +156,20 @@ curl -X POST "http://localhost:8000/upload?collection_name=my_research" \
 - **k**: Số lượng tài liệu trả về (mặc định: 10)
 - **fetch_k**: Số lượng ứng viên ban đầu (k × 3)
 
-## 📁 Quản lý Notebook
+## 📁 Quản lý Dự án
 
-- **Tạo mới**: Chọn "➕ Tạo Notebook Mới..." và đặt tên
-- **Chuyển đổi**: Chọn notebook từ dropdown
-- **Xóa**: Nhấn nút "🗑️ Xóa" khi đang mở notebook
+- **Tạo mới**: Chọn "➕ Tạo mới..." từ dropdown và đặt tên
+- **Chuyển đổi**: Chọn dự án từ dropdown - badge hiển thị dự án đang mở
+- **Xóa dự án**: Nhấn nút "🗑️ Xóa dự án này"
+- **Xóa chat**: Nhấn "🧹 Xóa lịch sử chat" để reset cuộc trò chuyện
+
+### Giao diện Sidebar
+
+| Panel               | Chức năng                                |
+| ------------------- | ---------------------------------------- |
+| 📂 **Dự án**        | Chọn/tạo/xóa dự án, hiển thị thống kê    |
+| 📥 **Nạp tài liệu** | Upload file với progress bar chi tiết    |
+| ⚙️ **Cấu hình**     | API Key và độ sâu tìm kiếm (collapsible) |
 
 ## 🛠️ Troubleshooting
 
