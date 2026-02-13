@@ -1,63 +1,63 @@
 # 🧠 easyResearch - AI Research Assistant
 
 <p align="center">
-  <b>Trợ lý nghiên cứu thông minh sử dụng RAG (Retrieval-Augmented Generation)</b>
+  <b>Intelligent Research Assistant powered by RAG (Retrieval-Augmented Generation)</b>
 </p>
 
 ---
 
-## 📖 Giới thiệu
+## 📖 Introduction
 
-**easyResearch** là ứng dụng AI giúp bạn tra cứu và hỏi đáp trên tài liệu của chính mình. Hệ thống sử dụng công nghệ RAG để:
+**easyResearch** is an AI application that helps you query and ask questions on your own documents. The system uses RAG technology to:
 
-- 📄 Đọc và phân tích tài liệu (PDF, DOCX, TXT, Code)
-- 🔍 Tìm kiếm ngữ nghĩa trong kho dữ liệu
-- 💬 Trả lời câu hỏi dựa trên nội dung tài liệu
-- 🌍 Hỗ trợ đa ngôn ngữ (Tiếng Việt & Tiếng Anh)
+- 📄 Read and analyze documents (PDF, DOCX, TXT, Code)
+- 🔍 Semantic search across your data repository
+- 💬 Answer questions based on document content
+- 🌍 Multi-language support (Vietnamese & English)
 
-## ✨ Tính năng
+## ✨ Features
 
-| Tính năng                  | Mô tả                                               |
-| -------------------------- | --------------------------------------------------- |
-| 📂 **Quản lý Notebook**    | Tổ chức tài liệu theo dự án/chủ đề riêng biệt       |
-| 📥 **Nạp đa định dạng**    | Hỗ trợ PDF, DOCX, TXT, Python code                  |
-| 🧠 **Chunking thông minh** | Tự động điều chỉnh cách cắt tài liệu theo loại file |
-| ⚡ **GPU Acceleration**    | Tối ưu cho GPU NVIDIA (CUDA)                        |
-| 🔑 **API Key linh hoạt**   | Dùng key riêng hoặc key hệ thống                    |
-| 🌐 **RESTful API**         | Tích hợp dễ dàng qua FastAPI                        |
-| 🎨 **Giao diện hiện đại**  | UI gradient, collapsible panels, progress tracking  |
-| 🧹 **Quản lý chat**        | Xóa lịch sử chat, avatar user/assistant             |
+| Feature                    | Description                                        |
+| -------------------------- | -------------------------------------------------- |
+| 📂 **Notebook Management** | Organize documents by project/topic separately     |
+| 📥 **Multi-format Import** | Support PDF, DOCX, TXT, Python code                |
+| 🧠 **Smart Chunking**      | Auto-adjust splitting strategy based on file type  |
+| ⚡ **GPU Acceleration**    | Optimized for NVIDIA GPU (CUDA)                    |
+| 🔑 **Flexible API Key**    | Use your own key or system default                 |
+| 🌐 **RESTful API**         | Easy integration via FastAPI                       |
+| 🎨 **Modern UI**           | Gradient UI, collapsible panels, progress tracking |
+| 🧹 **Chat Management**     | Clear chat history, user/assistant avatars         |
 
-## 🏗️ Kiến trúc hệ thống
+## 🏗️ System Architecture
 
 ```
 easyResearch/
-├── app.py              # Giao diện Streamlit (Web UI)
+├── app.py              # Streamlit Interface (Web UI)
 ├── main.py             # FastAPI Server (REST API)
 ├── core/
-│   ├── loader.py       # Đọc & cắt tài liệu thông minh
-│   ├── embedder.py     # Vector hóa & quản lý ChromaDB
-│   └── generator.py    # Xử lý RAG & gọi LLM
+│   ├── loader.py       # Smart Document Reader & Splitter
+│   ├── embedder.py     # Vectorization & ChromaDB Management
+│   └── generator.py    # RAG Processing & LLM Calls
 ├── database/
-│   └── chroma_db/      # Kho vector database
-└── uploads/            # Thư mục lưu file tạm
+│   └── chroma_db/      # Vector Database Storage
+└── uploads/            # Temporary File Storage
 ```
 
-### Công nghệ sử dụng
+### Tech Stack
 
 - **LLM**: Groq API (LLaMA 3.3 70B Versatile)
 - **Embedding**: HuggingFace `paraphrase-multilingual-MiniLM-L12-v2`
 - **Vector DB**: ChromaDB
 - **Framework**: LangChain, Streamlit, FastAPI
 
-## 🚀 Cài đặt
+## 🚀 Installation
 
-### Yêu cầu hệ thống
+### System Requirements
 
 - Python 3.10+
-- NVIDIA GPU với CUDA (khuyến nghị) hoặc CPU
+- NVIDIA GPU with CUDA (recommended) or CPU
 
-### Các bước cài đặt
+### Installation Steps
 
 1. **Clone repository**
 
@@ -66,7 +66,7 @@ easyResearch/
    cd easyResearch
    ```
 
-2. **Tạo môi trường ảo**
+2. **Create virtual environment**
 
    ```bash
    python -m venv venv
@@ -78,48 +78,48 @@ easyResearch/
    source venv/bin/activate
    ```
 
-3. **Cài đặt dependencies**
+3. **Install dependencies**
 
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Cấu hình API Key**
+4. **Configure API Key**
 
-   Tạo file `.env` trong thư mục gốc:
+   Create a `.env` file in the root directory:
 
    ```env
    GROQ_API_KEY=your_groq_api_key_here
    ```
 
-   > 💡 Lấy API Key miễn phí tại [console.groq.com](https://console.groq.com)
+   > 💡 Get a free API Key at [console.groq.com](https://console.groq.com)
 
-## 📖 Hướng dẫn sử dụng
+## 📖 Usage Guide
 
-### Chạy Web UI (Streamlit)
+### Run Web UI (Streamlit)
 
 ```bash
 streamlit run app.py
 ```
 
-Truy cập: `http://localhost:8501`
+Access: `http://localhost:8501`
 
-### Chạy REST API (FastAPI)
+### Run REST API (FastAPI)
 
 ```bash
 uvicorn main:app --reload
 ```
 
-Truy cập Swagger UI: `http://localhost:8000/docs`
+Access Swagger UI: `http://localhost:8000/docs`
 
 ## 🔌 API Endpoints
 
-### 1. Hỏi đáp - `POST /ask`
+### 1. Question & Answer - `POST /ask`
 
 ```json
 {
-  "question": "Câu hỏi của bạn",
-  "collection_name": "tên_notebook"
+  "question": "Your question here",
+  "collection_name": "notebook_name"
 }
 ```
 
@@ -127,61 +127,61 @@ Truy cập Swagger UI: `http://localhost:8000/docs`
 
 ```json
 {
-  "answer": "Câu trả lời từ AI",
+  "answer": "AI generated answer",
   "sources": ["file1.pdf", "file2.docx"]
 }
 ```
 
-### 2. Upload tài liệu - `POST /upload`
+### 2. Upload Document - `POST /upload`
 
 ```bash
 curl -X POST "http://localhost:8000/upload?collection_name=my_research" \
   -F "file=@document.pdf"
 ```
 
-## ⚙️ Cấu hình nâng cao
+## ⚙️ Advanced Configuration
 
-### Chiến thuật cắt tài liệu (Chunking)
+### Document Chunking Strategy
 
-| Loại file       | Chunk Size | Overlap | Ghi chú                  |
-| --------------- | ---------- | ------- | ------------------------ |
-| PDF, DOCX       | 1200       | 250     | Giữ ngữ cảnh văn bản dài |
-| Code (.py, .js) | 600        | 50      | Cắt theo function/class  |
-| JSON, CSV       | 500        | 0       | Không cắt giữa object    |
-| Text mặc định   | 800        | 100     | Cân bằng                 |
+| File Type       | Chunk Size | Overlap | Notes                      |
+| --------------- | ---------- | ------- | -------------------------- |
+| PDF, DOCX       | 1200       | 250     | Preserve long text context |
+| Code (.py, .js) | 600        | 50      | Split by function/class    |
+| JSON, CSV       | 500        | 0       | Don't split mid-object     |
+| Default Text    | 800        | 100     | Balanced                   |
 
-### Tham số tìm kiếm
+### Search Parameters
 
 - **Search Type**: MMR (Maximal Marginal Relevance)
-- **k**: Số lượng tài liệu trả về (mặc định: 10)
-- **fetch_k**: Số lượng ứng viên ban đầu (k × 3)
+- **k**: Number of documents to return (default: 10)
+- **fetch_k**: Initial candidate pool (k × 3)
 
-## 📁 Quản lý Dự án
+## 📁 Project Management
 
-- **Tạo mới**: Chọn "➕ Tạo mới..." từ dropdown và đặt tên
-- **Chuyển đổi**: Chọn dự án từ dropdown - badge hiển thị dự án đang mở
-- **Xóa dự án**: Nhấn nút "🗑️ Xóa dự án này"
-- **Xóa chat**: Nhấn "🧹 Xóa lịch sử chat" để reset cuộc trò chuyện
+- **Create New**: Select "➕ Create new..." from dropdown and name it
+- **Switch**: Select project from dropdown - badge shows active project
+- **Delete Project**: Click "🗑️ Delete this project" button
+- **Clear Chat**: Click "🧹 Clear chat history" to reset conversation
 
-### Giao diện Sidebar
+### Sidebar Interface
 
-| Panel               | Chức năng                                |
-| ------------------- | ---------------------------------------- |
-| 📂 **Dự án**        | Chọn/tạo/xóa dự án, hiển thị thống kê    |
-| 📥 **Nạp tài liệu** | Upload file với progress bar chi tiết    |
-| ⚙️ **Cấu hình**     | API Key và độ sâu tìm kiếm (collapsible) |
+| Panel                   | Function                                  |
+| ----------------------- | ----------------------------------------- |
+| 📂 **Project**          | Select/create/delete projects, show stats |
+| 📥 **Import Documents** | Upload files with detailed progress bar   |
+| ⚙️ **Settings**         | API Key and search depth (collapsible)    |
 
 ## 🛠️ Troubleshooting
 
-| Vấn đề        | Giải pháp                                   |
-| ------------- | ------------------------------------------- |
-| Thiếu API Key | Tạo file `.env` hoặc nhập key trong sidebar |
-| Lỗi CUDA      | Kiểm tra driver NVIDIA hoặc chạy trên CPU   |
-| Tràn VRAM     | Giảm batch size trong `embedder.py`         |
+| Issue           | Solution                                   |
+| --------------- | ------------------------------------------ |
+| Missing API Key | Create `.env` file or enter key in sidebar |
+| CUDA Error      | Check NVIDIA driver or run on CPU          |
+| VRAM Overflow   | Reduce batch size in `embedder.py`         |
 
 ## 📄 License
 
-MIT License - Xem file [LICENSE](LICENSE) để biết thêm chi tiết.
+MIT License - See [LICENSE](LICENSE) file for more details.
 
 ---
 
