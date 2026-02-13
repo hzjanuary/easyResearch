@@ -1,0 +1,28 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Environments
+venv/
+.venv/
+env/
+
+# Environment variables
+.env
+
+# Project specific data
+database/
+uploads/
+*.pdf
+*.docx
+*.txt
+
+# IDEs and Editors
+.vscode/
+.idea/
+
+# OS specific
+.DS_Store
+Thumbs.db
