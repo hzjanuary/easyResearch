@@ -237,12 +237,31 @@ with st.sidebar:
     
     # --- PHẦN 2: CẤU HÌNH AI ---
     with st.expander("⚙️ Cấu hình", expanded=False):
-        user_key = st.text_input(
-            "🔑 Groq API Key",
-            type="password",
-            placeholder="gsk_...",
-            help="Để trống = dùng key mặc định"
+        # Chọn LLM Provider
+        llm_provider = st.selectbox(
+            "🤖 Chọn LLM",
+            ["Groq (LLaMA 3.3 70B)", "Google Gemini"],
+            index=0,
+            help="Chọn nhà cung cấp AI"
         )
+        
+        # API Key input dựa trên provider
+        if "Groq" in llm_provider:
+            user_key = st.text_input(
+                "🔑 Groq API Key",
+                type="password",
+                placeholder="gsk_...",
+                help="Để trống = dùng key mặc định"
+            )
+            st.session_state.llm_provider = "groq"
+        else:
+            user_key = st.text_input(
+                "🔑 Google Gemini API Key",
+                type="password",
+                placeholder="AIza...",
+                help="Lấy key tại: https://aistudio.google.com/apikey"
+            )
+            st.session_state.llm_provider = "gemini"
         
         search_k = st.slider(
             "🔍 Độ sâu tìm kiếm",
@@ -308,7 +327,11 @@ with st.sidebar:
                 progress_bar.progress(1.0, text="📝 Đang tạo tóm tắt...")
                 try:
                     if "all_chunks" in st.session_state and st.session_state.all_chunks:
-                        summary = generate_notebook_summary(st.session_state.all_chunks, api_key=user_key)
+                        summary = generate_notebook_summary(
+                            st.session_state.all_chunks, 
+                            api_key=user_key,
+                            llm_provider=st.session_state.get("llm_provider", "groq")
+                        )
                         summary_path = f"database/chroma_db/{final_notebook_name}_summary.txt"
                         with open(summary_path, "w", encoding="utf-8") as f:
                             f.write(summary)
@@ -329,7 +352,7 @@ with st.sidebar:
     
     # Footer
     st.markdown("---")
-    st.caption("Made with ❤️ by easyResearch")
+    st.markdown("<p style='text-align: center; color: #888;'>Made with ❤️ by easyResearch</p>", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # 3. Giao diện Chat
@@ -375,13 +398,16 @@ if prompt := st.chat_input("💭 Đặt câu hỏi về tài liệu của bạn.
                 result = query_rag_system(
                     prompt,
                     collection_name=final_notebook_name,
-                    chat_history=st.session_state.messages,  # Truyền lịch sử chat
+                    chat_history=st.session_state.messages,
                     k_target=search_k,
-                    user_api_key=user_key
+                    user_api_key=user_key,
+                    llm_provider=st.session_state.get("llm_provider", "groq")
                 )
                 
                 answer = result["answer"]
                 sources = result["sources"]
+                standalone_q = result.get("standalone_question")
+                pipeline_info = result.get("pipeline_info", {})
                 
                 # Hiệu ứng đánh máy
                 words = answer.split()
@@ -393,12 +419,24 @@ if prompt := st.chat_input("💭 Đặt câu hỏi về tài liệu của bạn.
                 
                 message_placeholder.markdown(full_response)
                 
+                # Hiển thị câu hỏi đã được ngữ cảnh hóa (nếu có)
+                if standalone_q:
+                    st.caption(f"🔍 *Đã hiểu câu hỏi là: \"{standalone_q}\"*")
+                
                 # Hiển thị nguồn tham khảo
                 if sources:
                     st.markdown("---")
                     with st.expander(f"📚 Nguồn tham khảo ({len(sources)} tài liệu)", expanded=False):
                         for i, src in enumerate(sources, 1):
                             st.markdown(f"{i}. 📄 `{src}`")
+                
+                # Hiển thị RAG Pipeline Info (simplified)
+                if pipeline_info:
+                    with st.expander("🔬 Chi tiết xử lý", expanded=False):
+                        cols = st.columns(3)
+                        cols[0].metric("📚 Tìm thấy", pipeline_info.get("total_retrieved", 0))
+                        cols[1].metric("🎯 Sử dụng", pipeline_info.get("final_docs", 0))
+                        cols[2].metric("🔄 Ngữ cảnh", "✅" if pipeline_info.get("contextualized") else "⚪")
 
             except Exception as e:
                 st.error(f"❌ Lỗi: {str(e)}")

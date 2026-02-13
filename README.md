@@ -1,19 +1,20 @@
 # 🧠 easyResearch - AI Research Assistant
 
 <p align="center">
-  <b>Intelligent Research Assistant powered by RAG (Retrieval-Augmented Generation)</b>
+  <b>Advanced Research Assistant powered by RAG (Retrieval-Augmented Generation)</b>
 </p>
 
 ---
 
 ## 📖 Introduction
 
-**easyResearch** is an AI application that helps you query and ask questions on your own documents. The system uses RAG technology to:
+**easyResearch** is an AI application that helps you query and ask questions on your own documents. The system uses advanced RAG technology to:
 
 - 📄 Read and analyze documents (PDF, DOCX, TXT, Code)
-- 🔍 Semantic search across your data repository
+- 🔍 Hybrid Search (Vector + BM25 keyword search)
 - 💬 Answer questions based on document content
 - 🌍 Multi-language support (Vietnamese & English)
+- 🎯 Cross-Encoder Reranking for better accuracy
 
 ## ✨ Features
 
@@ -21,12 +22,14 @@
 | -------------------------- | -------------------------------------------------- |
 | 📂 **Notebook Management** | Organize documents by project/topic separately     |
 | 📥 **Multi-format Import** | Support PDF, DOCX, TXT, Python code                |
-| 🧠 **Smart Chunking**      | Auto-adjust splitting strategy based on file type  |
+| 🧠 **Parent Document**     | Small chunks for search, large chunks for context  |
 | ⚡ **GPU Acceleration**    | Optimized for NVIDIA GPU (CUDA)                    |
-| 🔑 **Flexible API Key**    | Use your own key or system default                 |
+| 🔑 **Multi-LLM Support**   | Groq (LLaMA 3.3) or Google Gemini                  |
 | 🌐 **RESTful API**         | Easy integration via FastAPI                       |
 | 🎨 **Modern UI**           | Gradient UI, collapsible panels, progress tracking |
-| 🧹 **Chat Management**     | Clear chat history, user/assistant avatars         |
+| 📊 **Dashboard**           | Project stats (chunks, files, size)                |
+| 📝 **Auto-Summarizer**     | Automatic summary generation after document upload |
+| 🔄 **Smart Context**       | Only contextualize when needed (faster response)   |
 
 ## 🏗️ System Architecture
 
@@ -35,9 +38,10 @@ easyResearch/
 ├── app.py              # Streamlit Interface (Web UI)
 ├── main.py             # FastAPI Server (REST API)
 ├── core/
-│   ├── loader.py       # Smart Document Reader & Splitter
+│   ├── loader.py       # Parent Document Retrieval & Smart Splitter
 │   ├── embedder.py     # Vectorization & ChromaDB Management
-│   └── generator.py    # RAG Processing & LLM Calls
+│   ├── generator.py    # Advanced RAG Pipeline
+│   └── summarizer.py   # Auto-Summarization
 ├── database/
 │   └── chroma_db/      # Vector Database Storage
 └── uploads/            # Temporary File Storage
@@ -45,10 +49,35 @@ easyResearch/
 
 ### Tech Stack
 
-- **LLM**: Groq API (LLaMA 3.3 70B Versatile)
+- **LLM**: Groq (LLaMA 3.3 70B) or Google Gemini 2.0 Flash
 - **Embedding**: HuggingFace `paraphrase-multilingual-MiniLM-L12-v2`
+- **Reranker**: CrossEncoder `ms-marco-MiniLM-L-6-v2`
 - **Vector DB**: ChromaDB
+- **Keyword Search**: BM25 (rank-bm25)
 - **Framework**: LangChain, Streamlit, FastAPI
+
+## 🔬 Advanced RAG Pipeline
+
+```
+Question → Smart Contextualization → Vector Search
+                                          ↓
+                                    BM25 Scoring
+                                          ↓
+                              Cross-Encoder Reranking
+                                          ↓
+               Hybrid Score (0.7×Rerank + 0.3×BM25)
+                                          ↓
+                 Parent Document Retrieval → LLM Answer
+```
+
+### Key Optimizations
+
+| Component                   | Benefit                                                 |
+| --------------------------- | ------------------------------------------------------- |
+| **Hybrid Search**           | Combines semantic + keyword matching                    |
+| **Parent Document**         | Small chunks (400) for search, large (2000) for context |
+| **Smart Contextualization** | Only calls LLM when pronouns/references detected        |
+| **Cross-Encoder**           | Local reranking (no API calls)                          |
 
 ## 🚀 Installation
 
@@ -90,9 +119,11 @@ easyResearch/
 
    ```env
    GROQ_API_KEY=your_groq_api_key_here
+   GOOGLE_API_KEY=your_gemini_api_key_here  # Optional
    ```
 
-   > 💡 Get a free API Key at [console.groq.com](https://console.groq.com)
+   > 💡 Get Groq API Key at [console.groq.com](https://console.groq.com)
+   > 💡 Get Gemini API Key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
 
 ## 📖 Usage Guide
 
@@ -141,20 +172,20 @@ curl -X POST "http://localhost:8000/upload?collection_name=my_research" \
 
 ## ⚙️ Advanced Configuration
 
-### Document Chunking Strategy
+### Parent Document Chunking
 
-| File Type       | Chunk Size | Overlap | Notes                      |
-| --------------- | ---------- | ------- | -------------------------- |
-| PDF, DOCX       | 1200       | 250     | Preserve long text context |
-| Code (.py, .js) | 600        | 50      | Split by function/class    |
-| JSON, CSV       | 500        | 0       | Don't split mid-object     |
-| Default Text    | 800        | 100     | Balanced                   |
+| File Type       | Parent Size | Child Size | Notes                      |
+| --------------- | ----------- | ---------- | -------------------------- |
+| PDF, DOCX       | 2500        | 500        | Preserve long text context |
+| Code (.py, .js) | 1500        | 400        | Split by function/class    |
+| JSON, CSV       | 1000        | 300        | Don't split mid-object     |
+| Default Text    | 800         | 100        | Balanced                   |
 
 ### Search Parameters
 
-- **Search Type**: MMR (Maximal Marginal Relevance)
+- **Hybrid Score**: `0.7 × Rerank + 0.3 × BM25`
 - **k**: Number of documents to return (default: 10)
-- **fetch_k**: Initial candidate pool (k × 3)
+- **Min Score Threshold**: 0.1 (filter low relevance)
 
 ## 📁 Project Management
 
@@ -162,14 +193,17 @@ curl -X POST "http://localhost:8000/upload?collection_name=my_research" \
 - **Switch**: Select project from dropdown - badge shows active project
 - **Delete Project**: Click "🗑️ Delete this project" button
 - **Clear Chat**: Click "🧹 Clear chat history" to reset conversation
+- **Auto-Summary**: Generated automatically after uploading documents
 
 ### Sidebar Interface
 
 | Panel                   | Function                                  |
 | ----------------------- | ----------------------------------------- |
-| 📂 **Project**          | Select/create/delete projects, show stats |
-| 📥 **Import Documents** | Upload files with detailed progress bar   |
-| ⚙️ **Settings**         | API Key and search depth (collapsible)    |
+| 📂 **Project**          | Select/create/delete with stats dashboard |
+| 📄 **Summary**          | Auto-generated project overview           |
+| 📊 **Statistics**       | Chunks, files, storage size               |
+| 📥 **Import Documents** | Upload files with progress bar            |
+| ⚙️ **Settings**         | LLM provider, API Key, search depth       |
 
 ## 🛠️ Troubleshooting
 
@@ -178,6 +212,7 @@ curl -X POST "http://localhost:8000/upload?collection_name=my_research" \
 | Missing API Key | Create `.env` file or enter key in sidebar |
 | CUDA Error      | Check NVIDIA driver or run on CPU          |
 | VRAM Overflow   | Reduce batch size in `embedder.py`         |
+| Slow Response   | Already optimized (1-2 LLM calls only)     |
 
 ## 📄 License
 
@@ -186,5 +221,4 @@ MIT License - See [LICENSE](LICENSE) file for more details.
 ---
 
 <p align="center">
-  Made with ❤️ for researchers and students
-</p>
+  Made with ❤️ by easyResearch
