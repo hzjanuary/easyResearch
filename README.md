@@ -26,7 +26,7 @@
 | ⚡ **GPU Acceleration**     | Optimized for NVIDIA GPU (CUDA)                    |
 | 🔑 **Multi-LLM Support**    | Groq (LLaMA 3.3) or Google Gemini                  |
 | 🌐 **RESTful API**          | Easy integration via FastAPI                       |
-| 🎨 **AnythingLLM Theme**    | Dark zinc UI inspired by AnythingLLM & Gemini      |
+| 🎨 **AnythingLLM Theme**    | Dark zinc UI inspired by AnythingLLM               |
 | 📊 **Workspace Stats**      | Mini stat cards (docs, vectors, storage size)      |
 | 📝 **Auto-Summarizer**      | Automatic summary generation after document upload |
 | 🔄 **Smart Context**        | Only contextualize when needed (faster response)   |
@@ -205,7 +205,7 @@ curl -X POST "http://localhost:8000/upload?collection_name=my_research" \
 
 ### UI Theme
 
-The interface uses an **AnythingLLM-inspired dark theme** with a **Gemini-style chat input**:
+The interface uses an **AnythingLLM-inspired dark theme**:
 
 | Element          | Color     | Description                       |
 | ---------------- | --------- | --------------------------------- |
