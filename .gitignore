@@ -26,5 +26,3 @@ uploads/
 # OS specific
 .DS_Store
 Thumbs.db
-
-app_backup.py

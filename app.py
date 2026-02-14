@@ -86,6 +86,7 @@ section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h1 {
     padding: 0 !important;
     background: none !important;
     -webkit-text-fill-color: unset !important;
+    text-align: center !important;
 }
 
 /* ── Sidebar h4 section labels ───────────────────────── */
@@ -219,6 +220,9 @@ hr {
     background-color: #6366f1 !important;
     border-radius: 4px !important;
 }
+[data-testid="stProgress"] p {
+    text-align: center !important;
+}
 
 /* ── Tabs ────────────────────────────────────────────── */
 .stTabs [data-baseweb="tab-list"] {
@@ -338,6 +342,46 @@ hr {
     font-size: 0.7rem;
     text-align: center;
     padding: 0.5rem 0;
+}
+
+/* ── Search mode radio pills ──────────────────────────── */
+div[data-testid="stRadio"][data-key="mode_radio"] {
+    position: fixed;
+    bottom: 3.8rem;
+    right: 2rem;
+    z-index: 100;
+}
+div[data-testid="stRadio"][data-key="mode_radio"] > label {
+    display: none !important;
+}
+div[data-testid="stRadio"][data-key="mode_radio"] [role="radiogroup"] {
+    display: inline-flex;
+    gap: 0 !important;
+    background-color: #27272a;
+    border: 1px solid #3f3f46;
+    border-radius: 20px;
+    padding: 3px;
+}
+div[data-testid="stRadio"][data-key="mode_radio"] label[data-baseweb="radio"] {
+    padding: 4px 14px !important;
+    margin: 0 !important;
+    border-radius: 16px;
+    transition: all 0.15s ease;
+}
+div[data-testid="stRadio"][data-key="mode_radio"] label[data-baseweb="radio"] > div:first-child {
+    display: none !important;
+}
+div[data-testid="stRadio"][data-key="mode_radio"] label[data-baseweb="radio"] p {
+    font-size: 0.72rem !important;
+    font-weight: 500 !important;
+    color: #71717a !important;
+}
+div[data-testid="stRadio"][data-key="mode_radio"] label[data-baseweb="radio"]:has(input:checked) {
+    background-color: #3f3f46;
+}
+div[data-testid="stRadio"][data-key="mode_radio"] label[data-baseweb="radio"]:has(input:checked) p {
+    color: #ffffff !important;
+    font-weight: 600 !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -480,9 +524,6 @@ with st.sidebar:
 
         st.session_state.user_api_key = user_key
 
-        search_k = st.slider("Context depth", 3, 20, 10)
-        st.caption(f"Retrieves top **{search_k}** passages")
-
         st.divider()
 
         if st.button("🗑 Clear chat", use_container_width=True):
@@ -537,6 +578,22 @@ for message in st.session_state.messages:
     avatar = "🤖" if message["role"] == "assistant" else "👤"
     with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
+
+# Search mode
+SEARCH_MODES = {"Fast": 5, "Accurate": 10, "Detailed": 18}
+
+if "search_mode" not in st.session_state:
+    st.session_state.search_mode = "Accurate"
+
+selected_mode = st.radio(
+    "mode", list(SEARCH_MODES.keys()),
+    index=list(SEARCH_MODES.keys()).index(st.session_state.search_mode),
+    horizontal=True,
+    label_visibility="collapsed",
+    key="mode_radio",
+)
+st.session_state.search_mode = selected_mode
+search_k = SEARCH_MODES[selected_mode]
 
 # Chat input
 if prompt := st.chat_input("Send a message"):
