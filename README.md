@@ -30,6 +30,10 @@
 | 📊 **Workspace Stats**      | Mini stat cards (docs, vectors, storage size)      |
 | 📝 **Auto-Summarizer**      | Automatic summary generation after document upload |
 | 🔄 **Smart Context**        | Only contextualize when needed (faster response)   |
+| 💬 **Chat Persistence**     | Auto-save/load chat history per workspace          |
+| 🎚️ **Context Depth**        | Fast / Accurate / Detailed search modes            |
+| 🗑️ **File Management**      | Delete individual files from workspace             |
+| 🕐 **Recent Questions**     | Quick access to recent queries in sidebar          |
 
 ## 🏗️ System Architecture
 
@@ -43,7 +47,8 @@ easyResearch/
 │   ├── generator.py    # Advanced RAG Pipeline
 │   └── summarizer.py   # Auto-Summarization
 ├── database/
-│   └── chroma_db/      # Vector Database Storage
+│   ├── chroma_db/      # Vector Database Storage
+│   └── chat_history/   # Persistent Chat History (JSON per workspace)
 └── uploads/            # Temporary File Storage
 ```
 
@@ -150,7 +155,9 @@ Access Swagger UI: `http://localhost:8000/docs`
 ```json
 {
   "question": "Your question here",
-  "collection_name": "notebook_name"
+  "collection_name": "notebook_name",
+  "k_target": 10,
+  "api_key": "your_api_key_here"
 }
 ```
 
@@ -179,29 +186,41 @@ curl -X POST "http://localhost:8000/upload?collection_name=my_research" \
 | PDF, DOCX       | 2500        | 500        | Preserve long text context |
 | Code (.py, .js) | 1500        | 400        | Split by function/class    |
 | JSON, CSV       | 1000        | 300        | Don't split mid-object     |
-| Default Text    | 800         | 100        | Balanced                   |
+| Default Text    | 2000        | 400        | Balanced                   |
 
 ### Search Parameters
 
 - **Hybrid Score**: `0.7 × Rerank + 0.3 × BM25`
-- **k**: Number of documents to return (default: 10)
 - **Min Score Threshold**: 0.1 (filter low relevance)
+
+### Context Depth Modes
+
+| Mode            | k (documents) | Use Case                          |
+| --------------- | ------------- | --------------------------------- |
+| ⚡ **Fast**     | 5             | Quick answers, low latency        |
+| 🎯 **Accurate** | 10            | Balanced (default)                |
+| 📚 **Detailed** | 18            | Deep research, comprehensive info |
 
 ## 📁 Workspace Management
 
 - **Create New**: Select "➕ New workspace…" from dropdown and name it
 - **Switch**: Select workspace from dropdown — badge shows active workspace
 - **Delete Workspace**: Go to ⚙️ Settings tab → "🗑 Delete workspace"
+- **Delete File**: Click ✕ next to any file in the 📁 Files list
 - **Clear Chat**: Go to ⚙️ Settings tab → "🗑 Clear chat"
+- **Chat Persistence**: Conversations auto-save per workspace and reload on switch
+- **Recent Questions**: Quick access to last 5 questions in sidebar
 - **Auto-Summary**: Generated automatically after uploading documents
 
 ### Sidebar Layout
 
-| Tab / Section             | Function                                    |
-| ------------------------- | ------------------------------------------- |
-| 📂 **Workspace Selector** | Select/create workspace with stats cards    |
-| 📄 **Documents Tab**      | Upload files, view summary & file list      |
-| ⚙️ **Settings Tab**       | LLM provider, API key, search depth, delete |
+| Tab / Section             | Function                                            |
+| ------------------------- | --------------------------------------------------- |
+| 📂 **Workspace Selector** | Select/create workspace with stats cards            |
+| 📄 **Documents Tab**      | Upload files, view summary, file list with delete   |
+| 🔍 **Recent Questions**   | Quick-access to recent queries (in Documents tab)   |
+| ⚙️ **Settings Tab**       | LLM provider, API key, clear chat, delete workspace |
+| 🎚️ **Context Depth**      | Fast / Accurate / Detailed radio pills (main area)  |
 
 ### UI Theme
 
