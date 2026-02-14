@@ -1,12 +1,56 @@
 import streamlit as st
 import os
 import time
+import json
 
 # Import các module từ bộ não Core
 from core.loader import load_and_split_document
-from core.embedder import add_to_vector_db, get_all_notebooks, delete_notebook, get_notebook_stats, get_total_db_size
+from core.embedder import add_to_vector_db, get_all_notebooks, delete_notebook, delete_file_from_notebook, get_notebook_stats, get_total_db_size
 from core.generator import query_rag_system
 from core.summarizer import generate_notebook_summary
+
+
+# ---------------------------------------------------------
+# Helper: persistent chat history per workspace
+# ---------------------------------------------------------
+CHAT_DIR = "database/chat_history"
+os.makedirs(CHAT_DIR, exist_ok=True)
+
+
+def _chat_path(notebook_name):
+    return os.path.join(CHAT_DIR, f"{notebook_name}.json")
+
+
+def save_chat(notebook_name, messages):
+    """Save full conversation to disk."""
+    with open(_chat_path(notebook_name), "w", encoding="utf-8") as f:
+        json.dump(messages, f, ensure_ascii=False, indent=2)
+
+
+def load_chat(notebook_name):
+    """Load full conversation from disk (or return None)."""
+    path = _chat_path(notebook_name)
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
+
+def delete_chat(notebook_name):
+    """Delete saved conversation."""
+    path = _chat_path(notebook_name)
+    if os.path.exists(path):
+        os.remove(path)
+
+
+def get_recent_questions(notebook_name, limit=5):
+    """Extract recent user questions from saved chat."""
+    msgs = load_chat(notebook_name)
+    if not msgs:
+        return []
+    questions = [m["content"] for m in msgs if m["role"] == "user"]
+    return questions[-limit:][::-1]  # newest first
+
 
 # ---------------------------------------------------------
 # 1. Cấu hình giao diện Streamlit
@@ -344,44 +388,103 @@ hr {
     padding: 0.5rem 0;
 }
 
-/* ── Search mode radio pills ──────────────────────────── */
-div[data-testid="stRadio"][data-key="mode_radio"] {
-    position: fixed;
-    bottom: 3.8rem;
-    right: 2rem;
-    z-index: 100;
+/* ── Bottom bar: push chat input up to make room for radio ─ */
+[data-testid="stBottomBlockContainer"] {
+    padding-bottom: 2.6rem !important;
 }
-div[data-testid="stRadio"][data-key="mode_radio"] > label {
+
+/* ── Search mode radio pills (fixed bottom center) ───── */
+.st-key-mode_radio {
+    position: fixed !important;
+    bottom: 0.25rem;
+    left: calc(50% + 7rem);
+    transform: translateX(-50%);
+    z-index: 999;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+.st-key-mode_radio [data-testid="stRadio"] > label {
     display: none !important;
 }
-div[data-testid="stRadio"][data-key="mode_radio"] [role="radiogroup"] {
-    display: inline-flex;
-    gap: 0 !important;
+.st-key-mode_radio [role="radiogroup"] {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 2px !important;
     background-color: #27272a;
     border: 1px solid #3f3f46;
-    border-radius: 20px;
-    padding: 3px;
+    border-radius: 22px;
+    padding: 3px 4px;
 }
-div[data-testid="stRadio"][data-key="mode_radio"] label[data-baseweb="radio"] {
-    padding: 4px 14px !important;
+.st-key-mode_radio label[data-baseweb="radio"] {
+    padding: 0 !important;
     margin: 0 !important;
-    border-radius: 16px;
+    border-radius: 18px;
     transition: all 0.15s ease;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 68px;
+    height: 28px;
+    cursor: pointer !important;
 }
-div[data-testid="stRadio"][data-key="mode_radio"] label[data-baseweb="radio"] > div:first-child {
+.st-key-mode_radio label[data-baseweb="radio"] > div:first-child {
     display: none !important;
 }
-div[data-testid="stRadio"][data-key="mode_radio"] label[data-baseweb="radio"] p {
-    font-size: 0.72rem !important;
+.st-key-mode_radio label[data-baseweb="radio"] > div:last-child {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100%;
+    height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+.st-key-mode_radio label[data-baseweb="radio"] p {
+    font-size: 0.75rem !important;
     font-weight: 500 !important;
     color: #71717a !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
 }
-div[data-testid="stRadio"][data-key="mode_radio"] label[data-baseweb="radio"]:has(input:checked) {
+.st-key-mode_radio label[data-baseweb="radio"]:hover {
+    background-color: rgba(63, 63, 70, 0.5);
+}
+.st-key-mode_radio label[data-baseweb="radio"]:has(input:checked) {
     background-color: #3f3f46;
 }
-div[data-testid="stRadio"][data-key="mode_radio"] label[data-baseweb="radio"]:has(input:checked) p {
+.st-key-mode_radio label[data-baseweb="radio"]:has(input:checked) p {
     color: #ffffff !important;
     font-weight: 600 !important;
+}
+
+/* File delete button – compact style */
+button[class*="st-key-del_file_"] {
+    padding: 0 !important;
+    min-height: 0 !important;
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 13px !important;
+    background: transparent !important;
+    border: 1px solid #3f3f46 !important;
+    color: #71717a !important;
+    border-radius: 4px !important;
+    margin-top: 2px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+button[class*="st-key-del_file_"] p {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+}
+button[class*="st-key-del_file_"]:hover {
+    background: #7f1d1d !important;
+    border-color: #dc2626 !important;
+    color: #fca5a5 !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -506,8 +609,24 @@ with st.sidebar:
             if _stats["files"]:
                 with st.expander(f"📁 Files ({len(_stats['files'])})", expanded=False):
                     for i, fname in enumerate(_stats["files"], 1):
-                        st.caption(f"{i}. {fname}")
-
+                        col_name, col_del = st.columns([0.85, 0.15])
+                        display_name = fname if len(fname) <= 30 else fname[:27] + "…"
+                        col_name.caption(f"{i}. {display_name}")
+                        if col_del.button("✕", key=f"del_file_{hash(fname)}", help=f"Delete {fname}"):
+                            deleted = delete_file_from_notebook(final_notebook_name, fname)
+                            if deleted:
+                                st.toast(f"Deleted {fname} ({deleted} chunks)")
+                                time.sleep(0.5)
+                                st.rerun()
+        # Recent questions
+        recent_qs = get_recent_questions(final_notebook_name)
+        if recent_qs:
+            with st.expander(f"🔍 Recent ({len(recent_qs)})", expanded=False):
+                for q in recent_qs:
+                    display = q if len(q) <= 35 else q[:35] + "…"
+                    if st.button(display, key=f"hist_{hash(q)}", use_container_width=True):
+                        st.session_state.messages.append({"role": "user", "content": q})
+                        st.rerun()
     with tab_cfg:
         # LLM Provider
         llm_provider = st.selectbox(
@@ -530,6 +649,7 @@ with st.sidebar:
             st.session_state.messages = [
                 {"role": "assistant", "content": "Chat cleared. How can I help?"}
             ]
+            delete_chat(final_notebook_name)
             st.rerun()
 
         if selected_option != "➕ New workspace…":
@@ -538,6 +658,7 @@ with st.sidebar:
                     summary_path = f"database/chroma_db/{final_notebook_name}_summary.txt"
                     if os.path.exists(summary_path):
                         os.remove(summary_path)
+                    delete_chat(final_notebook_name)
                     st.success("Deleted!")
                     time.sleep(0.5)
                     st.rerun()
@@ -549,29 +670,36 @@ with st.sidebar:
 # 3. Main Chat Area
 # ---------------------------------------------------------
 
-# Session state
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {
-            "role": "assistant",
-            "content": (
-                "Welcome to your workspace.\n\n"
-                "To get started, **upload a document** in the sidebar "
-                "or *send a chat*."
-            ),
-        }
-    ]
+# Session state — load persisted chat or show welcome
+_default_welcome = [
+    {
+        "role": "assistant",
+        "content": (
+            "Welcome to your workspace.\n\n"
+            "To get started, **upload a document** in the sidebar "
+            "or *send a chat*."
+        ),
+    }
+]
 
 if "current_notebook" not in st.session_state:
     st.session_state.current_notebook = final_notebook_name
+    saved = load_chat(final_notebook_name)
+    st.session_state.messages = saved if saved else list(_default_welcome)
 elif st.session_state.current_notebook != final_notebook_name:
-    st.session_state.messages = [
+    # Workspace switched — save old, load new
+    save_chat(st.session_state.current_notebook, st.session_state.messages)
+    saved = load_chat(final_notebook_name)
+    st.session_state.messages = saved if saved else [
         {
             "role": "assistant",
             "content": f"Switched to workspace **{final_notebook_name}**.\n\nAsk me anything about your documents!",
         }
     ]
     st.session_state.current_notebook = final_notebook_name
+elif "messages" not in st.session_state:
+    saved = load_chat(final_notebook_name)
+    st.session_state.messages = saved if saved else list(_default_welcome)
 
 # Chat history
 for message in st.session_state.messages:
@@ -585,6 +713,10 @@ SEARCH_MODES = {"Fast": 5, "Accurate": 10, "Detailed": 18}
 if "search_mode" not in st.session_state:
     st.session_state.search_mode = "Accurate"
 
+# Chat input
+prompt = st.chat_input("Send a message")
+
+# Search mode radio pills — rendered below chat input
 selected_mode = st.radio(
     "mode", list(SEARCH_MODES.keys()),
     index=list(SEARCH_MODES.keys()).index(st.session_state.search_mode),
@@ -595,8 +727,7 @@ selected_mode = st.radio(
 st.session_state.search_mode = selected_mode
 search_k = SEARCH_MODES[selected_mode]
 
-# Chat input
-if prompt := st.chat_input("Send a message"):
+if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
@@ -652,3 +783,4 @@ if prompt := st.chat_input("Send a message"):
                 message_placeholder.markdown(full_response)
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
+    save_chat(final_notebook_name, st.session_state.messages)

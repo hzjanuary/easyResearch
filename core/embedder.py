@@ -177,6 +177,35 @@ def get_all_notebooks():
         print(f"⚠️ Lỗi khi lấy danh sách Notebook: {e}")
         return []
 
+def delete_file_from_notebook(notebook_name, source_name):
+    """
+    Xóa tất cả chunks của một file cụ thể khỏi collection trong ChromaDB.
+    Tìm dựa trên metadata 'source'.
+    """
+    try:
+        client = chromadb.PersistentClient(path=CHROMA_DIR)
+        collection = client.get_collection(notebook_name)
+
+        # Lấy tất cả IDs có metadata source khớp
+        result = collection.get(include=["metadatas"])
+        ids_to_delete = []
+        for doc_id, meta in zip(result["ids"], result["metadatas"]):
+            if meta and meta.get("source") == source_name:
+                ids_to_delete.append(doc_id)
+
+        if ids_to_delete:
+            # Xóa theo batch để tránh giới hạn
+            BATCH = 500
+            for i in range(0, len(ids_to_delete), BATCH):
+                collection.delete(ids=ids_to_delete[i:i + BATCH])
+            print(f"🗑️ Đã xóa {len(ids_to_delete)} chunks của '{source_name}' khỏi '{notebook_name}'")
+
+        return len(ids_to_delete)
+    except Exception as e:
+        print(f"❌ Lỗi khi xóa file {source_name}: {e}")
+        return 0
+
+
 def delete_notebook(notebook_name):
     """
     Xóa hoàn toàn một Notebook khỏi Database VÀ Xóa thư mục vật lý trên ổ cứng
