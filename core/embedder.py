@@ -1,6 +1,6 @@
 import os
 import shutil
-import chromadb # Thư viện cốt lõi để quản lý DB (List/Delete)
+import chromadb
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 import torch

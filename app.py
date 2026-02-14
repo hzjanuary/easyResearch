@@ -21,379 +21,534 @@ st.set_page_config(
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
 
-# CSS tối ưu giao diện
-st.markdown("""
+# =============================================================
+# CSS — AnythingLLM-inspired dark theme
+# KEY FIX: target font-family on SPECIFIC selectors only,
+#          never on *, so Material Symbols Rounded icons work.
+# =============================================================
+st.markdown(r"""
 <style>
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-    }
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h1 {
-        background: linear-gradient(90deg, #00ffa3, #00d4ff);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 1.8rem;
-        text-align: center;
-        padding: 0.5rem 0;
-    }
-    
-    /* Button styling */
-    .stButton > button {
-        width: 100%;
-        border-radius: 10px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        border: none;
-    }
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 255, 163, 0.3);
-    }
-    .stButton > button[kind="primary"] {
-        background: linear-gradient(90deg, #00ffa3, #00d4ff);
-        color: #1a1a2e;
-    }
-    div[data-testid="stButton"] > button[kind="secondary"] {
-        background-color: #ff4757;
-        color: white;
-    }
-    
-    /* Project badge */
-    .project-badge {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 8px 16px;
-        border-radius: 20px;
-        color: white;
-        font-weight: 600;
-        display: inline-block;
-        margin: 5px 0;
-    }
-    
-    /* Chat header */
-    .chat-header {
-        background: linear-gradient(90deg, #1a1a2e, #16213e);
-        padding: 1rem 1.5rem;
-        border-radius: 15px;
-        margin-bottom: 1rem;
-        border-left: 4px solid #00ffa3;
-    }
-    .chat-header h2 {
-        margin: 0;
-        color: #fff;
-    }
-    .chat-header p {
-        margin: 0.5rem 0 0 0;
-        color: #888;
-        font-size: 0.9rem;
-    }
-    
-    /* File uploader */
-    [data-testid="stFileUploader"] {
-        border: 2px dashed #00ffa3;
-        border-radius: 10px;
-        padding: 10px;
-    }
-    
-    /* Expander */
-    .streamlit-expanderHeader {
-        background-color: #1e1e2e;
-        border-radius: 8px;
-    }
-    
-    /* Info boxes */
-    .info-box {
-        background: rgba(0, 255, 163, 0.1);
-        border-left: 3px solid #00ffa3;
-        padding: 10px 15px;
-        border-radius: 0 8px 8px 0;
-        margin: 5px 0;
-    }
-    
-    /* Stats container */
-    .stats-container {
-        display: flex;
-        justify-content: space-around;
-        padding: 10px;
-        background: rgba(255,255,255,0.05);
-        border-radius: 10px;
-        margin: 10px 0;
-    }
-    .stat-item {
-        text-align: center;
-    }
-    .stat-number {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #00ffa3;
-    }
-    .stat-label {
-        font-size: 0.75rem;
-        color: #888;
-    }
+/* ── Google Font ─────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Apply Inter ONLY to content elements, NOT to icon fonts */
+body, p, div, h1, h2, h3, h4, h5, h6,
+label, input, textarea, a, li, td, th,
+[data-testid="stMarkdownContainer"],
+[data-testid="stText"],
+[data-testid="stCaption"] {
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Restore Material Symbols for ALL Streamlit icon elements */
+span[data-testid],
+[data-testid="collapsedControl"] *,
+[data-testid="stSidebarCollapseButton"] *,
+[data-testid="baseButton-headerNoPadding"] *,
+[data-testid="baseButton-header"] *,
+button[kind="headerNoPadding"] *,
+button[kind="header"] *,
+.material-symbols-rounded,
+[class*="material-symbols"] {
+    font-family: 'Material Symbols Rounded' !important;
+    -webkit-font-feature-settings: 'liga' !important;
+    font-feature-settings: 'liga' !important;
+}
+
+/* ── Main background ─────────────────────────────────── */
+.stApp {
+    background-color: #1c1c1f !important;
+}
+
+/* ── Top header bar ──────────────────────────────────── */
+header[data-testid="stHeader"] {
+    background-color: #1c1c1f !important;
+    border-bottom: none !important;
+}
+
+/* ── Sidebar ─────────────────────────────────────────── */
+section[data-testid="stSidebar"] {
+    background-color: #111111 !important;
+    border-right: 1px solid #2d2d30 !important;
+}
+
+section[data-testid="stSidebar"] > div:first-child {
+    padding-top: 1rem;
+}
+
+/* ── Sidebar title ───────────────────────────────────── */
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h1 {
+    color: #ffffff !important;
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em;
+    margin: 0 0 1.2rem 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    -webkit-text-fill-color: unset !important;
+}
+
+/* ── Sidebar h4 section labels ───────────────────────── */
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h4 {
+    color: #71717a !important;
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    margin: 1rem 0 0.4rem 0 !important;
+}
+
+/* ── Sidebar captions ────────────────────────────────── */
+section[data-testid="stSidebar"] [data-testid="stCaption"] p {
+    color: #52525b !important;
+    font-size: 0.75rem !important;
+}
+
+/* ── Text inputs ─────────────────────────────────────── */
+input[type="text"], input[type="password"], textarea {
+    background-color: #27272a !important;
+    border: 1px solid #3f3f46 !important;
+    border-radius: 8px !important;
+    color: #e4e4e7 !important;
+    caret-color: #e4e4e7 !important;
+}
+input:focus, textarea:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 1px #6366f1 !important;
+}
+
+/* ── Select-boxes ────────────────────────────────────── */
+div[data-baseweb="select"] > div {
+    background-color: #27272a !important;
+    border: 1px solid #3f3f46 !important;
+    border-radius: 8px !important;
+    color: #e4e4e7 !important;
+}
+
+/* ── Buttons — primary (indigo) ──────────────────────── */
+.stButton > button[kind="primary"] {
+    background-color: #4f46e5 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    padding: 0.5rem 1rem !important;
+    transition: background-color 0.15s ease;
+}
+.stButton > button[kind="primary"]:hover {
+    background-color: #4338ca !important;
+}
+
+/* ── Buttons — secondary / default ───────────────────── */
+.stButton > button[kind="secondary"],
+.stButton > button:not([kind]) {
+    background-color: transparent !important;
+    color: #a1a1aa !important;
+    border: 1px solid #3f3f46 !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    font-size: 0.85rem !important;
+    transition: all 0.15s ease;
+}
+.stButton > button[kind="secondary"]:hover,
+.stButton > button:not([kind]):hover {
+    background-color: #27272a !important;
+    color: #ffffff !important;
+    border-color: #52525b !important;
+}
+
+/* ── File uploader ───────────────────────────────────── */
+[data-testid="stFileUploader"] {
+    border: 1px dashed #3f3f46 !important;
+    border-radius: 10px !important;
+    background-color: #1f1f23 !important;
+    padding: 0.75rem !important;
+}
+[data-testid="stFileUploader"]:hover {
+    border-color: #6366f1 !important;
+}
+[data-testid="stFileUploader"] button {
+    background-color: #27272a !important;
+    color: #d4d4d8 !important;
+    border: 1px solid #3f3f46 !important;
+    border-radius: 6px !important;
+}
+
+/* ── Expanders ───────────────────────────────────────── */
+[data-testid="stExpander"] > details {
+    border: 1px solid #27272a !important;
+    border-radius: 8px !important;
+    background-color: #18181b !important;
+}
+[data-testid="stExpander"] > details > summary {
+    color: #a1a1aa !important;
+    font-size: 0.85rem !important;
+    padding: 0.6rem 0.8rem !important;
+}
+[data-testid="stExpander"] > details > summary:hover {
+    color: #e4e4e7 !important;
+}
+
+/* ── Divider ─────────────────────────────────────────── */
+hr {
+    border: none !important;
+    border-top: 1px solid #27272a !important;
+    margin: 0.8rem 0 !important;
+}
+
+/* ── Metrics ─────────────────────────────────────────── */
+[data-testid="stMetric"] {
+    background-color: #1f1f23 !important;
+    border: 1px solid #27272a !important;
+    border-radius: 8px !important;
+    padding: 0.8rem !important;
+}
+[data-testid="stMetric"] label {
+    color: #71717a !important;
+    font-size: 0.75rem !important;
+}
+[data-testid="stMetric"] [data-testid="stMetricValue"] {
+    color: #e4e4e7 !important;
+    font-size: 1.2rem !important;
+    font-weight: 700 !important;
+}
+
+/* ── Progress bar ────────────────────────────────────── */
+[data-testid="stProgress"] > div > div {
+    background-color: #6366f1 !important;
+    border-radius: 4px !important;
+}
+
+/* ── Tabs ────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0 !important;
+    background-color: #1f1f23 !important;
+    border-radius: 8px !important;
+    padding: 3px !important;
+    border: 1px solid #27272a !important;
+}
+.stTabs [data-baseweb="tab"] {
+    border-radius: 6px !important;
+    color: #71717a !important;
+    font-weight: 500 !important;
+    font-size: 0.8rem !important;
+    padding: 0.4rem 0.8rem !important;
+}
+.stTabs [aria-selected="true"] {
+    background-color: #27272a !important;
+    color: #ffffff !important;
+}
+.stTabs [data-baseweb="tab-highlight"],
+.stTabs [data-baseweb="tab-border"] {
+    display: none !important;
+}
+
+/* ── Chat messages ───────────────────────────────────── */
+[data-testid="stChatMessage"] {
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0.8rem 0 !important;
+}
+[data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] {
+    color: #d4d4d8 !important;
+    line-height: 1.7;
+}
+
+/* ── Chat input box ──────────────────────────────────── */
+[data-testid="stChatInput"] {
+    padding: 0.5rem 1.5rem !important;
+}
+[data-testid="stChatInput"] > div,
+[data-testid="stChatInput"] > div > div,
+[data-testid="stChatInput"] > div > div > div,
+[data-testid="stChatInput"] div {
+    background-color: #303034 !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+[data-testid="stChatInput"] > div {
+    border-radius: 14px !important;
+    padding: 6px !important;
+}
+[data-testid="stChatInput"] textarea {
+    background-color: #303034 !important;
+    color: #e4e4e7 !important;
+    padding: 0.45rem 1.2rem !important;
+    border-radius: 10px !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+[data-testid="stChatInput"] button {
+    background-color: #303034 !important;
+    border: none !important;
+}
+
+/* ── Scrollbar ───────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+/* ── Custom HTML components ──────────────────────────── */
+.workspace-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #27272a;
+    border: 1px solid #3f3f46;
+    padding: 6px 14px;
+    border-radius: 6px;
+    color: #e4e4e7;
+    font-weight: 500;
+    font-size: 0.85rem;
+    margin: 4px 0 8px 0;
+}
+
+.stats-row {
+    display: flex;
+    gap: 8px;
+    margin: 8px 0;
+}
+.stat-card {
+    flex: 1;
+    background-color: #1f1f23;
+    border: 1px solid #27272a;
+    border-radius: 8px;
+    padding: 10px 12px;
+    text-align: center;
+}
+.stat-card .val {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #e4e4e7;
+}
+.stat-card .lbl {
+    font-size: 0.6rem;
+    color: #71717a;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+}
+
+.sidebar-footer {
+    color: #3f3f46;
+    font-size: 0.7rem;
+    text-align: center;
+    padding: 0.5rem 0;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. Sidebar: Quản lý & Cấu hình
+# 2. Sidebar
 # ---------------------------------------------------------
 with st.sidebar:
-    st.title("🧠 easyResearch")
-    
-    # --- PHẦN 1: QUẢN LÝ DỰ ÁN ---
-    with st.container():
-        st.markdown("#### 📂 Dự án")
-        existing_notebooks = get_all_notebooks()
-        total_db_size = get_total_db_size()
-        
-        # Hiển thị tổng quan Database
+    # Logo
+    st.markdown("# 🧠 easyResearch")
+
+    # --- WORKSPACE ---
+    st.markdown("#### Workspaces")
+
+    existing_notebooks = get_all_notebooks()
+
+    options = ["➕ New workspace…"] + existing_notebooks
+    selected_option = st.selectbox(
+        "Workspace", options,
+        label_visibility="collapsed",
+        index=1 if existing_notebooks else 0,
+    )
+
+    final_notebook_name = "Default_Project"
+
+    if selected_option == "➕ New workspace…":
+        new_name = st.text_input(
+            "Name", "New_Project",
+            label_visibility="collapsed",
+            placeholder="Enter workspace name…",
+        )
+        final_notebook_name = new_name.replace(" ", "_").strip()
+        st.caption(f"Will create **{final_notebook_name}**")
+    else:
+        final_notebook_name = selected_option
+        st.markdown(
+            f'<div class="workspace-badge">📂 {final_notebook_name}</div>',
+            unsafe_allow_html=True,
+        )
+
+        # Mini stats
+        stats = get_notebook_stats(final_notebook_name)
         st.markdown(f"""
-        <div class="stats-container">
-            <div class="stat-item">
-                <div class="stat-number">{len(existing_notebooks)}</div>
-                <div class="stat-label">Dự án</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">{total_db_size}</div>
-                <div class="stat-label">MB tổng</div>
-            </div>
+        <div class="stats-row">
+            <div class="stat-card"><div class="val">{len(stats["files"])}</div><div class="lbl">Docs</div></div>
+            <div class="stat-card"><div class="val">{stats["chunks"]}</div><div class="lbl">Vectors</div></div>
+            <div class="stat-card"><div class="val">{stats["size_mb"]}</div><div class="lbl">MB</div></div>
         </div>
         """, unsafe_allow_html=True)
-        
-        options = ["➕ Tạo mới..."] + existing_notebooks
-        selected_option = st.selectbox(
-            "Chọn dự án",
-            options,
-            label_visibility="collapsed",
-            help="Chọn dự án để làm việc hoặc tạo mới"
-        )
-        
-        final_notebook_name = "Default_Project"
-        
-        if selected_option == "➕ Tạo mới...":
-            new_name = st.text_input(
-                "Tên dự án",
-                "My_New_Project",
-                label_visibility="collapsed",
-                placeholder="Nhập tên dự án..."
-            )
-            final_notebook_name = new_name.replace(" ", "_").strip()
-            st.caption(f"📁 Sẽ tạo: **{final_notebook_name}**")
-        else:
-            final_notebook_name = selected_option
-            st.markdown(f'<div class="project-badge">📖 {final_notebook_name}</div>', unsafe_allow_html=True)
-            
-            if st.button("🗑️ Xóa dự án này", key="del_btn", type="secondary", use_container_width=True):
-                if delete_notebook(final_notebook_name):
-                    # Xóa file summary nếu có
-                    summary_path = f"database/chroma_db/{final_notebook_name}_summary.txt"
-                    if os.path.exists(summary_path):
-                        os.remove(summary_path)
-                    st.success("✅ Đã xóa thành công!")
-                    time.sleep(1)
-                    st.rerun()
-                else:
-                    st.error("❌ Không thể xóa!")
-        
-        # --- HIỂN THỊ TÓM TẮT DỰ ÁN ---
-        summary_file = f"database/chroma_db/{final_notebook_name}_summary.txt"
-        if os.path.exists(summary_file):
-            with st.expander("📄 Tóm tắt Dự án", expanded=False):
-                with open(summary_file, "r", encoding="utf-8") as f:
-                    st.markdown(f.read())
-        
-        # --- DASHBOARD THỐNG KÊ DỰ ÁN ---
-        if selected_option != "➕ Tạo mới...":
-            with st.expander("📊 Thống kê dự án", expanded=False):
-                stats = get_notebook_stats(final_notebook_name)
-                
-                # Hiển thị thống kê dạng card
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric(
-                        label="📄 Đoạn văn",
-                        value=stats["chunks"],
-                        help="Số lượng chunks trong DB"
-                    )
-                with col2:
-                    st.metric(
-                        label="📁 File nguồn",
-                        value=len(stats["files"]),
-                        help="Số tài liệu đã nạp"
-                    )
-                
-                st.metric(
-                    label="💾 Dung lượng",
-                    value=f"{stats['size_mb']} MB",
-                    help="Dung lượng trên ổ cứng"
-                )
-                
-                # Danh sách file nguồn
-                if stats["files"]:
-                    st.markdown("**Danh sách tài liệu:**")
-                    for i, f in enumerate(stats["files"], 1):
-                        st.caption(f"{i}. 📄 {f}")
-    
+
     st.divider()
-    
-    # --- PHẦN 2: CẤU HÌNH AI ---
-    with st.expander("⚙️ Cấu hình", expanded=False):
-        # Chọn LLM Provider
-        llm_provider = st.selectbox(
-            "🤖 Chọn LLM",
-            ["Groq (LLaMA 3.3 70B)", "Google Gemini"],
-            index=0,
-            help="Chọn nhà cung cấp AI"
-        )
-        
-        # API Key input dựa trên provider
-        if "Groq" in llm_provider:
-            user_key = st.text_input(
-                "🔑 Groq API Key",
-                type="password",
-                placeholder="gsk_...",
-                help="Để trống = dùng key mặc định"
-            )
-            st.session_state.llm_provider = "groq"
-        else:
-            user_key = st.text_input(
-                "🔑 Google Gemini API Key",
-                type="password",
-                placeholder="AIza...",
-                help="Lấy key tại: https://aistudio.google.com/apikey"
-            )
-            st.session_state.llm_provider = "gemini"
-        
-        search_k = st.slider(
-            "🔍 Độ sâu tìm kiếm",
-            min_value=3,
-            max_value=20,
-            value=10,
-            help="Số lượng đoạn văn tham khảo"
-        )
-        
-        st.caption(f"Tìm **{search_k}** đoạn văn liên quan nhất")
-    
-    # --- PHẦN 3: NẠP TÀI LIỆU ---
-    with st.expander("📥 Nạp tài liệu", expanded=True):
+
+    # --- ACTIONS (Tabs) ---
+    tab_docs, tab_cfg = st.tabs(["📄 Documents", "⚙️ Settings"])
+
+    with tab_docs:
+        # Upload
         uploaded_files = st.file_uploader(
-            "Kéo thả hoặc chọn file",
+            "Drop files here",
             type=["pdf", "txt", "docx", "py"],
             accept_multiple_files=True,
             label_visibility="collapsed",
-            help="Hỗ trợ: PDF, DOCX, TXT, Python"
         )
-        
+
         if uploaded_files:
-            st.caption(f"📎 Đã chọn **{len(uploaded_files)}** file")
-            
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            process_btn = st.button("🚀 Xử lý", type="primary", use_container_width=True)
-        with col2:
-            if uploaded_files:
-                st.caption(f"{len(uploaded_files)} 📄")
-        
-        if process_btn:
-            if not uploaded_files:
-                st.warning("⚠️ Chưa chọn file!")
-            else:
-                progress_bar = st.progress(0, text="Đang xử lý...")
-                for i, uploaded_file in enumerate(uploaded_files):
-                    temp_path = f"uploads/{uploaded_file.name}"
-                    with open(temp_path, "wb") as f:
-                        f.write(uploaded_file.getbuffer())
-                    
-                    progress_bar.progress(
-                        (i + 0.5) / len(uploaded_files),
-                        text=f"📄 {uploaded_file.name[:20]}..."
-                    )
-                    
-                    try:
-                        chunks = load_and_split_document(temp_path)
-                        add_to_vector_db(chunks, collection_name=final_notebook_name)
-                        
-                        # Lưu chunks để tạo summary sau
-                        if "all_chunks" not in st.session_state:
-                            st.session_state.all_chunks = []
-                        st.session_state.all_chunks.extend(chunks)
-                        
-                        os.remove(temp_path)
-                    except Exception as e:
-                        st.error(f"❌ {uploaded_file.name}: {e}")
-                    
-                    progress_bar.progress((i + 1) / len(uploaded_files))
-                
-                # --- TỰ ĐỘNG TÓM TẮT SAU KHI NẠP XONG ---
-                progress_bar.progress(1.0, text="📝 Đang tạo tóm tắt...")
+            st.caption(f"Selected **{len(uploaded_files)}** file(s)")
+            process_btn = st.button("Upload & Process", type="primary", use_container_width=True)
+        else:
+            process_btn = False
+
+        if process_btn and uploaded_files:
+            progress_bar = st.progress(0, text="Processing…")
+            for i, uploaded_file in enumerate(uploaded_files):
+                temp_path = f"uploads/{uploaded_file.name}"
+                with open(temp_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+
                 try:
-                    if "all_chunks" in st.session_state and st.session_state.all_chunks:
-                        summary = generate_notebook_summary(
-                            st.session_state.all_chunks, 
-                            api_key=user_key,
-                            llm_provider=st.session_state.get("llm_provider", "groq")
-                        )
-                        summary_path = f"database/chroma_db/{final_notebook_name}_summary.txt"
-                        with open(summary_path, "w", encoding="utf-8") as f:
-                            f.write(summary)
-                        st.session_state.all_chunks = []  # Reset
+                    chunks = load_and_split_document(temp_path)
+                    add_to_vector_db(chunks, collection_name=final_notebook_name)
+
+                    if "all_chunks" not in st.session_state:
+                        st.session_state.all_chunks = []
+                    st.session_state.all_chunks.extend(chunks)
+
+                    os.remove(temp_path)
                 except Exception as e:
-                    st.warning(f"⚠️ Không thể tạo tóm tắt: {e}")
-                
-                progress_bar.progress(1.0, text="✅ Hoàn tất!")
-                time.sleep(1)
-                st.rerun()
+                    st.error(f"Error: {e}")
 
-    st.divider()
-    
-    # --- NÚT XÓA CHAT ---
-    if st.button("🧹 Xóa lịch sử chat", use_container_width=True):
-        st.session_state.messages = [{"role": "assistant", "content": "Đã xóa lịch sử. Tôi có thể giúp gì?"}]
-        st.rerun()
-    
+                progress_bar.progress((i + 1) / len(uploaded_files))
+
+            # Auto summary
+            progress_bar.progress(1.0, text="Generating summary…")
+            try:
+                if "all_chunks" in st.session_state and st.session_state.all_chunks:
+                    summary = generate_notebook_summary(
+                        st.session_state.all_chunks,
+                        api_key=st.session_state.get("user_api_key", ""),
+                        llm_provider=st.session_state.get("llm_provider", "groq"),
+                    )
+                    summary_path = f"database/chroma_db/{final_notebook_name}_summary.txt"
+                    with open(summary_path, "w", encoding="utf-8") as f:
+                        f.write(summary)
+                    st.session_state.all_chunks = []
+            except Exception:
+                pass
+
+            progress_bar.progress(1.0, text="Done!")
+            time.sleep(0.8)
+            st.rerun()
+
+        # Summary viewer
+        summary_file = f"database/chroma_db/{final_notebook_name}_summary.txt"
+        if os.path.exists(summary_file):
+            with st.expander("📝 Summary", expanded=False):
+                with open(summary_file, "r", encoding="utf-8") as f:
+                    st.markdown(f.read())
+
+        # File list
+        if selected_option != "➕ New workspace…":
+            _stats = get_notebook_stats(final_notebook_name)
+            if _stats["files"]:
+                with st.expander(f"📁 Files ({len(_stats['files'])})", expanded=False):
+                    for i, fname in enumerate(_stats["files"], 1):
+                        st.caption(f"{i}. {fname}")
+
+    with tab_cfg:
+        # LLM Provider
+        llm_provider = st.selectbox(
+            "LLM Provider",
+            ["Groq (LLaMA 3.3 70B)", "Google Gemini"],
+        )
+
+        if "Groq" in llm_provider:
+            user_key = st.text_input("API Key", type="password", placeholder="gsk_…")
+            st.session_state.llm_provider = "groq"
+        else:
+            user_key = st.text_input("API Key", type="password", placeholder="AIza…")
+            st.session_state.llm_provider = "gemini"
+
+        st.session_state.user_api_key = user_key
+
+        search_k = st.slider("Context depth", 3, 20, 10)
+        st.caption(f"Retrieves top **{search_k}** passages")
+
+        st.divider()
+
+        if st.button("🗑 Clear chat", use_container_width=True):
+            st.session_state.messages = [
+                {"role": "assistant", "content": "Chat cleared. How can I help?"}
+            ]
+            st.rerun()
+
+        if selected_option != "➕ New workspace…":
+            if st.button("🗑 Delete workspace", type="secondary", use_container_width=True):
+                if delete_notebook(final_notebook_name):
+                    summary_path = f"database/chroma_db/{final_notebook_name}_summary.txt"
+                    if os.path.exists(summary_path):
+                        os.remove(summary_path)
+                    st.success("Deleted!")
+                    time.sleep(0.5)
+                    st.rerun()
+
     # Footer
-    st.markdown("---")
-    st.markdown("<p style='text-align: center; color: #888;'>Made with ❤️ by easyResearch</p>", unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-footer">easyResearch · RAG Assistant</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 3. Giao diện Chat
+# 3. Main Chat Area
 # ---------------------------------------------------------
 
-# Header với thông tin dự án
-st.markdown(f"""
-<div class="chat-header">
-    <h2>💬 Trò chuyện</h2>
-    <p>Đang làm việc với: <strong>{final_notebook_name}</strong></p>
-</div>
-""", unsafe_allow_html=True)
-
-# Khởi tạo session state
+# Session state
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "👋 Xin chào! Tôi là trợ lý nghiên cứu AI.\n\n**Bắt đầu bằng cách:**\n1. Chọn hoặc tạo dự án ở sidebar\n2. Nạp tài liệu của bạn\n3. Đặt câu hỏi cho tôi!"}]
+    st.session_state.messages = [
+        {
+            "role": "assistant",
+            "content": (
+                "Welcome to your workspace.\n\n"
+                "To get started, **upload a document** in the sidebar "
+                "or *send a chat*."
+            ),
+        }
+    ]
 
 if "current_notebook" not in st.session_state:
     st.session_state.current_notebook = final_notebook_name
 elif st.session_state.current_notebook != final_notebook_name:
-    st.session_state.messages = [{"role": "assistant", "content": f"📂 Đã chuyển sang dự án **{final_notebook_name}**.\n\nHãy đặt câu hỏi về tài liệu trong dự án này!"}]
+    st.session_state.messages = [
+        {
+            "role": "assistant",
+            "content": f"Switched to workspace **{final_notebook_name}**.\n\nAsk me anything about your documents!",
+        }
+    ]
     st.session_state.current_notebook = final_notebook_name
 
-# Hiển thị chat history
+# Chat history
 for message in st.session_state.messages:
-    with st.chat_message(message["role"], avatar="🧠" if message["role"] == "assistant" else "👤"):
+    avatar = "🤖" if message["role"] == "assistant" else "👤"
+    with st.chat_message(message["role"], avatar=avatar):
         st.markdown(message["content"])
 
 # Chat input
-if prompt := st.chat_input("💭 Đặt câu hỏi về tài liệu của bạn..."):
-    # Thêm tin nhắn user
+if prompt := st.chat_input("Send a message"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
 
-    # Xử lý và trả lời
-    with st.chat_message("assistant", avatar="🧠"):
+    with st.chat_message("assistant", avatar="🤖"):
         message_placeholder = st.empty()
         full_response = ""
-        
-        with st.spinner("🔍 Đang tìm kiếm trong tài liệu..."):
+
+        with st.spinner("Searching documents…"):
             try:
                 result = query_rag_system(
                     prompt,
@@ -401,46 +556,42 @@ if prompt := st.chat_input("💭 Đặt câu hỏi về tài liệu của bạn.
                     chat_history=st.session_state.messages,
                     k_target=search_k,
                     user_api_key=user_key,
-                    llm_provider=st.session_state.get("llm_provider", "groq")
+                    llm_provider=st.session_state.get("llm_provider", "groq"),
                 )
-                
+
                 answer = result["answer"]
                 sources = result["sources"]
                 standalone_q = result.get("standalone_question")
                 pipeline_info = result.get("pipeline_info", {})
-                
-                # Hiệu ứng đánh máy
+
+                # Typing effect
                 words = answer.split()
                 for i, word in enumerate(words):
                     full_response += word + " "
-                    if i % 3 == 0:  # Cập nhật mỗi 3 từ để mượt hơn
+                    if i % 3 == 0:
                         message_placeholder.markdown(full_response + "▌")
                         time.sleep(0.02)
-                
+
                 message_placeholder.markdown(full_response)
-                
-                # Hiển thị câu hỏi đã được ngữ cảnh hóa (nếu có)
+
                 if standalone_q:
-                    st.caption(f"🔍 *Đã hiểu câu hỏi là: \"{standalone_q}\"*")
-                
-                # Hiển thị nguồn tham khảo
+                    st.caption(f'🔍 Interpreted as: "{standalone_q}"')
+
                 if sources:
-                    st.markdown("---")
-                    with st.expander(f"📚 Nguồn tham khảo ({len(sources)} tài liệu)", expanded=False):
+                    with st.expander(f"📚 Sources ({len(sources)})", expanded=False):
                         for i, src in enumerate(sources, 1):
-                            st.markdown(f"{i}. 📄 `{src}`")
-                
-                # Hiển thị RAG Pipeline Info (simplified)
+                            st.markdown(f"{i}. `{src}`")
+
                 if pipeline_info:
-                    with st.expander("🔬 Chi tiết xử lý", expanded=False):
+                    with st.expander("🔬 Pipeline info", expanded=False):
                         cols = st.columns(3)
-                        cols[0].metric("📚 Tìm thấy", pipeline_info.get("total_retrieved", 0))
-                        cols[1].metric("🎯 Sử dụng", pipeline_info.get("final_docs", 0))
-                        cols[2].metric("🔄 Ngữ cảnh", "✅" if pipeline_info.get("contextualized") else "⚪")
+                        cols[0].metric("Retrieved", pipeline_info.get("total_retrieved", 0))
+                        cols[1].metric("Used", pipeline_info.get("final_docs", 0))
+                        cols[2].metric("Context", "✅" if pipeline_info.get("contextualized") else "—")
 
             except Exception as e:
-                st.error(f"❌ Lỗi: {str(e)}")
-                full_response = "Đã xảy ra lỗi. Vui lòng thử lại."
+                st.error(f"Error: {str(e)}")
+                full_response = "An error occurred. Please try again."
                 message_placeholder.markdown(full_response)
-    
+
     st.session_state.messages.append({"role": "assistant", "content": full_response})
