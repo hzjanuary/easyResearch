@@ -18,18 +18,18 @@
 
 ## ✨ Features
 
-| Feature                    | Description                                        |
-| -------------------------- | -------------------------------------------------- |
-| 📂 **Notebook Management** | Organize documents by project/topic separately     |
-| 📥 **Multi-format Import** | Support PDF, DOCX, TXT, Python code                |
-| 🧠 **Parent Document**     | Small chunks for search, large chunks for context  |
-| ⚡ **GPU Acceleration**    | Optimized for NVIDIA GPU (CUDA)                    |
-| 🔑 **Multi-LLM Support**   | Groq (LLaMA 3.3) or Google Gemini                  |
-| 🌐 **RESTful API**         | Easy integration via FastAPI                       |
-| 🎨 **Modern UI**           | Gradient UI, collapsible panels, progress tracking |
-| 📊 **Dashboard**           | Project stats (chunks, files, size)                |
-| 📝 **Auto-Summarizer**     | Automatic summary generation after document upload |
-| 🔄 **Smart Context**       | Only contextualize when needed (faster response)   |
+| Feature                     | Description                                        |
+| --------------------------- | -------------------------------------------------- |
+| 📂 **Workspace Management** | Organize documents by project/topic separately     |
+| 📥 **Multi-format Import**  | Support PDF, DOCX, TXT, Python code                |
+| 🧠 **Parent Document**      | Small chunks for search, large chunks for context  |
+| ⚡ **GPU Acceleration**     | Optimized for NVIDIA GPU (CUDA)                    |
+| 🔑 **Multi-LLM Support**    | Groq (LLaMA 3.3) or Google Gemini                  |
+| 🌐 **RESTful API**          | Easy integration via FastAPI                       |
+| 🎨 **AnythingLLM Theme**    | Dark zinc UI inspired by AnythingLLM & Gemini      |
+| 📊 **Workspace Stats**      | Mini stat cards (docs, vectors, storage size)      |
+| 📝 **Auto-Summarizer**      | Automatic summary generation after document upload |
+| 🔄 **Smart Context**        | Only contextualize when needed (faster response)   |
 
 ## 🏗️ System Architecture
 
@@ -187,23 +187,37 @@ curl -X POST "http://localhost:8000/upload?collection_name=my_research" \
 - **k**: Number of documents to return (default: 10)
 - **Min Score Threshold**: 0.1 (filter low relevance)
 
-## 📁 Project Management
+## 📁 Workspace Management
 
-- **Create New**: Select "➕ Create new..." from dropdown and name it
-- **Switch**: Select project from dropdown - badge shows active project
-- **Delete Project**: Click "🗑️ Delete this project" button
-- **Clear Chat**: Click "🧹 Clear chat history" to reset conversation
+- **Create New**: Select "➕ New workspace…" from dropdown and name it
+- **Switch**: Select workspace from dropdown — badge shows active workspace
+- **Delete Workspace**: Go to ⚙️ Settings tab → "🗑 Delete workspace"
+- **Clear Chat**: Go to ⚙️ Settings tab → "🗑 Clear chat"
 - **Auto-Summary**: Generated automatically after uploading documents
 
-### Sidebar Interface
+### Sidebar Layout
 
-| Panel                   | Function                                  |
-| ----------------------- | ----------------------------------------- |
-| 📂 **Project**          | Select/create/delete with stats dashboard |
-| 📄 **Summary**          | Auto-generated project overview           |
-| 📊 **Statistics**       | Chunks, files, storage size               |
-| 📥 **Import Documents** | Upload files with progress bar            |
-| ⚙️ **Settings**         | LLM provider, API Key, search depth       |
+| Tab / Section             | Function                                    |
+| ------------------------- | ------------------------------------------- |
+| 📂 **Workspace Selector** | Select/create workspace with stats cards    |
+| 📄 **Documents Tab**      | Upload files, view summary & file list      |
+| ⚙️ **Settings Tab**       | LLM provider, API key, search depth, delete |
+
+### UI Theme
+
+The interface uses an **AnythingLLM-inspired dark theme** with a **Gemini-style chat input**:
+
+| Element          | Color     | Description                       |
+| ---------------- | --------- | --------------------------------- |
+| Sidebar          | `#111111` | Deep dark background              |
+| Main area        | `#1c1c1f` | Slightly lighter dark             |
+| Inputs / Cards   | `#27272a` | Zinc-800 for form elements        |
+| Borders          | `#3f3f46` | Subtle zinc-700 borders           |
+| Accent (buttons) | `#4f46e5` | Indigo primary buttons            |
+| Chat input       | `#303034` | Unified single-color box          |
+| Font             | Inter     | Clean sans-serif via Google Fonts |
+
+> **Note**: CSS targets specific selectors (not `*`) to preserve Streamlit's Material Symbols Rounded icons.
 
 ## 🛠️ Troubleshooting
 
