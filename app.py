@@ -3,7 +3,6 @@ import os
 import time
 import json
 
-# Import các module từ bộ não Core
 from core.loader import load_and_split_document
 from core.embedder import add_to_vector_db, get_all_notebooks, delete_notebook, delete_file_from_notebook, get_notebook_stats, get_total_db_size
 from core.generator import query_rag_system
@@ -53,7 +52,7 @@ def get_recent_questions(notebook_name, limit=5):
 
 
 # ---------------------------------------------------------
-# 1. Cấu hình giao diện Streamlit
+# Streamlit page config
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="easyResearch - AI Assistant",
@@ -490,7 +489,7 @@ button[class*="st-key-del_file_"]:hover {
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. Sidebar
+# Sidebar
 # ---------------------------------------------------------
 with st.sidebar:
     # Logo
@@ -667,7 +666,7 @@ with st.sidebar:
     st.markdown('<div class="sidebar-footer">easyResearch · RAG Assistant</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 3. Main Chat Area
+# Main Chat Area
 # ---------------------------------------------------------
 
 # Session state — load persisted chat or show welcome

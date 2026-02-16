@@ -6,43 +6,33 @@ from langchain_huggingface import HuggingFaceEmbeddings
 import torch
 import time
 
-# Cấu hình thư mục lưu trữ DB
 CHROMA_DIR = "database/chroma_db"
 
-# Tối ưu hóa cho RTX 3050
-# Kiểm tra xem có GPU không, nếu có dùng 'cuda', không thì 'cpu'
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-print(f"🚀 EasyResearch đang chạy trên thiết bị: {DEVICE.upper()}")
+print(f"🚀 EasyResearch running on: {DEVICE.upper()}")
 
-# Khởi tạo mô hình Embedding
-# Sử dụng model hỗ trợ đa ngôn ngữ (bao gồm Tiếng Việt và Tiếng Anh)
 embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-    model_kwargs={'device': DEVICE}, # Quan trọng: Đẩy model vào GPU
+    model_kwargs={'device': DEVICE},
     encode_kwargs={'normalize_embeddings': True}
 )
 
 def add_to_vector_db(chunks, collection_name="default_notebook"):
-    """
-    Thêm chunks vào ChromaDB theo collection (Notebook) cụ thể.
-    """
-    # Khởi tạo kết nối tới Chroma
+    """Add chunks to ChromaDB collection."""
     db = Chroma(
         collection_name=collection_name,
         embedding_function=embedding_model,
         persist_directory=CHROMA_DIR
     )
     
-    # Tách riêng Texts, Metadatas và IDs để nạp vào DB
     texts = [chunk.page_content for chunk in chunks]
     metadatas = [chunk.metadata for chunk in chunks]
-    ids = [chunk.id for chunk in chunks] # Dùng ID từ hàm hash
+    ids = [chunk.id for chunk in chunks]
 
-    # Xử lý theo Batch (Lô) để tránh tràn VRAM của RTX 3050 (4GB)
-    BATCH_SIZE = 500 
+    BATCH_SIZE = 500
     total_chunks = len(chunks)
     
-    print(f"📥 Đang nạp {total_chunks} đoạn văn vào Notebook '{collection_name}'...")
+    print(f"📥 Ingesting {total_chunks} chunks into '{collection_name}'...")
     
     for i in range(0, total_chunks, BATCH_SIZE):
         end = min(i + BATCH_SIZE, total_chunks)
@@ -55,36 +45,28 @@ def add_to_vector_db(chunks, collection_name="default_notebook"):
             metadatas=batch_metadatas,
             ids=batch_ids 
         )
-        print(f"   ✅ Đã xử lý batch {i} -> {end}")
+        print(f"   ✅ Processed batch {i} -> {end}")
         
     return db
 
 def get_retriever(collection_name="default_notebook"):
-    """
-    Hàm lấy công cụ tìm kiếm cho Generator
-    """
+    """Get retriever for the RAG pipeline."""
     db = Chroma(
         collection_name=collection_name,
         embedding_function=embedding_model,
         persist_directory=CHROMA_DIR
     )
-    # Sử dụng MMR như dự án gốc để tăng độ đa dạng
     return db.as_retriever(
         search_type="mmr",
         search_kwargs={'k': 5, 'fetch_k': 20}
     )
 
 # ---------------------------------------------------------
-# CÁC HÀM QUẢN LÝ NOTEBOOK (ĐÃ CẬP NHẬT LOGIC XÓA FOLDER)
+# Notebook management
 # ---------------------------------------------------------
 
 def get_notebook_stats(notebook_name):
-    """
-    Lấy thống kê chi tiết của một Notebook:
-    - Số lượng đoạn văn (chunks)
-    - Danh sách các file nguồn
-    - Dung lượng thư mục trên ổ cứng
-    """
+    """Get detailed stats for a notebook: chunk count, source files, storage size."""
     stats = {
         "chunks": 0,
         "files": [],
@@ -97,7 +79,6 @@ def get_notebook_stats(notebook_name):
             
         client = chromadb.PersistentClient(path=CHROMA_DIR)
         
-        # Tìm collection
         target_collection = None
         for col in client.list_collections():
             if col.name == notebook_name:
@@ -107,15 +88,11 @@ def get_notebook_stats(notebook_name):
         if not target_collection:
             return stats
         
-        # Lấy collection data
         collection = client.get_collection(notebook_name)
         
-        # Đếm số chunks
         stats["chunks"] = collection.count()
         
-        # Lấy danh sách file nguồn từ metadata
         if stats["chunks"] > 0:
-            # Lấy tất cả metadata
             result = collection.get(include=["metadatas"])
             if result and result["metadatas"]:
                 sources = set()
@@ -124,7 +101,7 @@ def get_notebook_stats(notebook_name):
                         sources.add(meta["source"])
                 stats["files"] = list(sources)
         
-        # Tính dung lượng thư mục
+        # Calculate directory size
         collection_uuid = str(target_collection.id)
         dir_path = os.path.join(CHROMA_DIR, collection_uuid)
         if os.path.exists(dir_path):
@@ -138,13 +115,11 @@ def get_notebook_stats(notebook_name):
         return stats
         
     except Exception as e:
-        print(f"⚠️ Lỗi khi lấy thống kê notebook {notebook_name}: {e}")
+        print(f"⚠️ Error getting notebook stats for {notebook_name}: {e}")
         return stats
 
 def get_total_db_size():
-    """
-    Lấy tổng dung lượng của toàn bộ database
-    """
+    """Get total database size in MB."""
     try:
         if not os.path.exists(CHROMA_DIR):
             return 0.0
@@ -156,37 +131,28 @@ def get_total_db_size():
                 total_size += os.path.getsize(fp)
         return round(total_size / (1024 * 1024), 2)
     except Exception as e:
-        print(f"⚠️ Lỗi khi tính dung lượng DB: {e}")
+        print(f"⚠️ Error calculating DB size: {e}")
         return 0.0
 
 def get_all_notebooks():
-    """
-    Lấy danh sách tất cả các Notebook (Collection) đang có trong Database
-    """
+    """Get list of all notebook (collection) names in the database."""
     try:
-        # Nếu thư mục chưa tồn tại thì chưa có notebook nào
         if not os.path.exists(CHROMA_DIR):
             return []
             
-        # Kết nối trực tiếp vào DB để xem danh sách
         client = chromadb.PersistentClient(path=CHROMA_DIR)
         collections = client.list_collections()
-        # Trả về danh sách tên các notebook
         return [c.name for c in collections]
     except Exception as e:
-        print(f"⚠️ Lỗi khi lấy danh sách Notebook: {e}")
+        print(f"⚠️ Error listing notebooks: {e}")
         return []
 
 def delete_file_from_notebook(notebook_name, source_name):
-    """
-    Xóa tất cả chunks của một file cụ thể khỏi collection trong ChromaDB.
-    Tìm dựa trên metadata 'source'.
-    """
+    """Delete all chunks of a specific file from a ChromaDB collection by metadata source."""
     try:
         client = chromadb.PersistentClient(path=CHROMA_DIR)
         collection = client.get_collection(notebook_name)
 
-        # Lấy tất cả IDs có metadata source khớp
         result = collection.get(include=["metadatas"])
         ids_to_delete = []
         for doc_id, meta in zip(result["ids"], result["metadatas"]):
@@ -194,28 +160,24 @@ def delete_file_from_notebook(notebook_name, source_name):
                 ids_to_delete.append(doc_id)
 
         if ids_to_delete:
-            # Xóa theo batch để tránh giới hạn
             BATCH = 500
             for i in range(0, len(ids_to_delete), BATCH):
                 collection.delete(ids=ids_to_delete[i:i + BATCH])
-            print(f"🗑️ Đã xóa {len(ids_to_delete)} chunks của '{source_name}' khỏi '{notebook_name}'")
+            print(f"🗑️ Deleted {len(ids_to_delete)} chunks of '{source_name}' from '{notebook_name}'")
 
         return len(ids_to_delete)
     except Exception as e:
-        print(f"❌ Lỗi khi xóa file {source_name}: {e}")
+        print(f"❌ Error deleting file {source_name}: {e}")
         return 0
 
 
 def delete_notebook(notebook_name):
-    """
-    Xóa hoàn toàn một Notebook khỏi Database VÀ Xóa thư mục vật lý trên ổ cứng
-    """
+    """Delete a notebook entirely: remove from DB and delete physical directory."""
     try:
         client = chromadb.PersistentClient(path=CHROMA_DIR)
         
-        # --- BƯỚC 1: Tìm UUID của thư mục trước khi xóa ---
+        # Find collection UUID before deleting
         target_collection = None
-        # Duyệt qua danh sách để tìm đúng collection object
         for col in client.list_collections():
             if col.name == notebook_name:
                 target_collection = col
@@ -223,28 +185,25 @@ def delete_notebook(notebook_name):
         
         collection_uuid = None
         if target_collection:
-            collection_uuid = str(target_collection.id) # Lấy ID thư mục (Ví dụ: 93f17d...)
-            print(f"🔍 Đã tìm thấy thư mục vật lý: {collection_uuid}")
-        # -------------------------------------------------------
+            collection_uuid = str(target_collection.id)
+            print(f"🔍 Found physical directory: {collection_uuid}")
 
-        # --- BƯỚC 2: Xóa khỏi Logic (SQLite) ---
+        # Remove from DB (SQLite)
         client.delete_collection(notebook_name)
-        print(f"🗑️ Đã xóa Collection khỏi DB: {notebook_name}")
+        print(f"🗑️ Deleted collection from DB: {notebook_name}")
         
-        # --- BƯỚC 3: Xóa thư mục vật lý (Ổ cứng) ---
+        # Remove physical directory
         if collection_uuid:
             dir_path = os.path.join(CHROMA_DIR, collection_uuid)
             if os.path.exists(dir_path):
                 try:
-                    # Chờ 1 chút để Window nhả file ra (Fix lỗi PermissionError)
                     time.sleep(0.5) 
-                    shutil.rmtree(dir_path) # Lệnh xóa ép buộc folder
-                    print(f"📂 Đã xóa sạch thư mục rác: {dir_path}")
+                    shutil.rmtree(dir_path)
+                    print(f"📂 Cleaned up directory: {dir_path}")
                 except Exception as e:
-                    print(f"⚠️ Không thể xóa folder ngay lập tức (Windows đang khóa): {e}")
-                    # Nếu không xóa được ngay, nó sẽ thành file rác, lần sau khởi động lại máy xóa cũng được.
+                    print(f"⚠️ Could not delete folder immediately (file lock): {e}")
 
         return True
     except Exception as e:
-        print(f"❌ Lỗi khi xóa notebook {notebook_name}: {e}")
+        print(f"❌ Error deleting notebook {notebook_name}: {e}")
         return False

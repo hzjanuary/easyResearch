@@ -13,21 +13,19 @@ from core.embedder import embedding_model
 
 load_dotenv()
 
-# Cấu hình Chroma Path và Thiết bị
 CHROMA_DIR = "database/chroma_db"
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-# Giới hạn số tin nhắn trong history để tối ưu context window
 MAX_HISTORY_MESSAGES = 10
 
-# Khởi tạo Reranker mô hình MiniLM
+# Reranker
 reranker_model = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2', device=DEVICE)
 
 # =============================================================================
 # PROMPTS
 # =============================================================================
 
-# Prompt ngữ cảnh hóa câu hỏi (Contextualization)
+# Contextualization prompt
 contextualize_q_system_prompt = """You are a question reformulation expert. Your task is to reformulate the user's latest question into a standalone question that can be understood WITHOUT the chat history.
 
 RULES:
@@ -96,7 +94,7 @@ DOCUMENT CONTENT:
 GRADE:"""),
 ])
 
-# Prompt RAG với history
+# RAG prompt with history
 rag_prompt_with_history = ChatPromptTemplate.from_messages([
     (
         "system",
@@ -145,13 +143,12 @@ GUIDELINES:
 # =============================================================================
 
 def _tokenize(text: str) -> list:
-    """Tokenize text cho BM25"""
-    # Đơn giản hóa: tách theo khoảng trắng và ký tự đặc biệt
+    """Tokenize text for BM25."""
     return re.findall(r'\w+', text.lower())
 
 
 def _summarize_conversation(chat_history: list, max_messages: int = MAX_HISTORY_MESSAGES) -> str:
-    """Tóm tắt cuộc trò chuyện"""
+    """Summarize conversation history."""
     if not chat_history or len(chat_history) <= 1:
         return "This is the beginning of the conversation."
     
@@ -166,19 +163,19 @@ def _summarize_conversation(chat_history: list, max_messages: int = MAX_HISTORY_
 
 
 def _generate_multi_queries(llm, question: str) -> list:
-    """Multi-Query Expansion: Tạo nhiều biến thể câu hỏi"""
+    """Multi-Query Expansion: generate query variants."""
     try:
         chain = multi_query_prompt | llm
         result = chain.invoke({"question": question})
         queries = [q.strip() for q in result.content.strip().split("\n") if q.strip()]
-        return [question] + queries[:3]  # 1 gốc + 3 variants = 4 queries
+        return [question] + queries[:3]  # original + 3 variants
     except Exception as e:
         print(f"⚠️ Multi-Query failed: {e}")
         return [question]
 
 
 def _generate_hyde_document(llm, question: str) -> str:
-    """HyDE: Tạo tài liệu giả định để tìm kiếm"""
+    """HyDE: Generate hypothetical document for search."""
     try:
         chain = hyde_prompt | llm
         result = chain.invoke({"question": question})
@@ -191,32 +188,25 @@ def _generate_hyde_document(llm, question: str) -> str:
 
 
 def _bm25_search(documents: list, query: str, top_k: int = 10) -> list:
-    """BM25 Keyword Search"""
+    """BM25 Keyword Search."""
     if not documents:
         return []
     
-    # Tokenize tất cả documents
     tokenized_corpus = [_tokenize(doc.page_content) for doc in documents]
     bm25 = BM25Okapi(tokenized_corpus)
     
-    # Tokenize query và tìm kiếm
     tokenized_query = _tokenize(query)
     scores = bm25.get_scores(tokenized_query)
     
-    # Gắn score vào metadata
     for i, doc in enumerate(documents):
         doc.metadata["bm25_score"] = float(scores[i])
     
-    # Sắp xếp và trả về top_k
     sorted_docs = sorted(documents, key=lambda x: x.metadata["bm25_score"], reverse=True)
     return sorted_docs[:top_k]
 
 
 def _crag_grade_documents(llm, question: str, documents: list) -> tuple:
-    """
-    CRAG: Đánh giá relevance của documents
-    Trả về: (relevant_docs, partial_docs, irrelevant_count)
-    """
+    """CRAG: Grade document relevance. Returns (relevant, partial, irrelevant_count)."""
     relevant_docs = []
     partial_docs = []
     irrelevant_count = 0
@@ -225,7 +215,6 @@ def _crag_grade_documents(llm, question: str, documents: list) -> tuple:
     
     for doc in documents:
         try:
-            # Chỉ lấy 500 ký tự đầu để grading nhanh
             doc_snippet = doc.page_content[:500]
             result = grading_chain.invoke({
                 "question": question,
@@ -244,7 +233,6 @@ def _crag_grade_documents(llm, question: str, documents: list) -> tuple:
                 irrelevant_count += 1
                 
         except Exception as e:
-            # Nếu grading fail, giả sử là partial
             doc.metadata["crag_grade"] = "PARTIAL"
             partial_docs.append(doc)
     
@@ -252,13 +240,11 @@ def _crag_grade_documents(llm, question: str, documents: list) -> tuple:
 
 
 def _hybrid_search(db, query: str, hyde_query: str, k_per_method: int = 10) -> list:
-    """
-    Hybrid Search: Kết hợp Vector Search + BM25
-    """
+    """Hybrid Search: Vector Search + BM25."""
     all_docs = []
     seen_contents = set()
     
-    # 1. Vector Search với query gốc
+    # 1. Vector Search with original query
     vector_retriever = db.as_retriever(
         search_type="similarity",
         search_kwargs={"k": k_per_method}
@@ -271,7 +257,7 @@ def _hybrid_search(db, query: str, hyde_query: str, k_per_method: int = 10) -> l
             doc.metadata["retrieval_method"] = "vector"
             all_docs.append(doc)
     
-    # 2. Vector Search với HyDE document
+    # 2. Vector Search with HyDE document
     hyde_docs = vector_retriever.invoke(hyde_query)
     for doc in hyde_docs:
         content_hash = hash(doc.page_content[:100])
@@ -282,10 +268,10 @@ def _hybrid_search(db, query: str, hyde_query: str, k_per_method: int = 10) -> l
     
     print(f"📊 Hybrid Search: {len(vector_docs)} vector + {len(hyde_docs)} HyDE = {len(all_docs)} unique docs")
     
-    # 3. BM25 trên tập docs đã lấy được (để rerank)
+    # 3. BM25 on retrieved docs (for reranking)
     if all_docs:
         bm25_ranked = _bm25_search(all_docs.copy(), query, top_k=len(all_docs))
-        # Kết hợp BM25 score vào docs gốc
+        # Merge BM25 scores into original docs
         bm25_scores = {hash(d.page_content[:100]): d.metadata.get("bm25_score", 0) for d in bm25_ranked}
         for doc in all_docs:
             doc_hash = hash(doc.page_content[:100])
@@ -299,17 +285,14 @@ def _hybrid_search(db, query: str, hyde_query: str, k_per_method: int = 10) -> l
 # =============================================================================
 
 def _needs_contextualization(question: str) -> bool:
-    """
-    Kiểm tra xem câu hỏi có cần ngữ cảnh hóa không.
-    Chỉ contextualize khi có đại từ hoặc tham chiếu.
-    """
-    # Các từ chỉ cần ngữ cảnh
+    """Check if question needs contextualization (contains pronouns/references)."""
+    # Context indicator patterns
     context_indicators = [
-        # Tiếng Anh
+        # English
         r'\b(it|its|this|that|these|those|they|them|their|he|she|him|her)\b',
         r'\b(the same|above|previous|mentioned|said|such)\b',
         r'\b(what about|how about|and the|also the|another)\b',
-        # Tiếng Việt
+        # Vietnamese
         r'\b(nó|này|đó|ở trên|như vậy|còn|thế thì|vậy thì)\b',
         r'\b(cái này|cái đó|điều đó|vấn đề này|chúng)\b',
     ]
@@ -327,12 +310,12 @@ def _needs_contextualization(question: str) -> bool:
 
 def query_rag_system(question: str, collection_name: str, chat_history: list = None, k_target: int = 10, user_api_key: str = None, llm_provider: str = "groq"):
     """
-    OPTIMIZED RAG Pipeline (Fast Mode):
+    OPTIMIZED RAG Pipeline:
     - Vector Search + BM25 Hybrid
-    - Cross-Encoder Reranking (thay thế CRAG)
+    - Cross-Encoder Reranking
     - Single LLM call for answer
     
-    Supports: Groq (LLaMA 3.3) và Google Gemini
+    Supports: Groq (LLaMA 3.3) and Google Gemini
     """
     
     # 1. API KEY & LLM INITIALIZATION
@@ -341,7 +324,7 @@ def query_rag_system(question: str, collection_name: str, chat_history: list = N
         final_api_key = user_api_key if user_api_key and user_api_key.strip() else system_key
         
         if not final_api_key:
-            return {"answer": "❌ Lỗi: Thiếu Google Gemini API Key.", "sources": []}
+            return {"answer": "❌ Error: Missing Google Gemini API Key.", "sources": []}
         
         try:
             llm = ChatGoogleGenerativeAI(
@@ -351,14 +334,14 @@ def query_rag_system(question: str, collection_name: str, chat_history: list = N
                 google_api_key=final_api_key
             )
         except Exception as e:
-            return {"answer": f"Lỗi khởi tạo Gemini: {str(e)}", "sources": []}
+            return {"answer": f"Error initializing Gemini: {str(e)}", "sources": []}
     else:
         # Default: Groq
         system_key = os.getenv("GROQ_API_KEY")
         final_api_key = user_api_key if user_api_key and user_api_key.strip() else system_key
         
         if not final_api_key:
-            return {"answer": "❌ Lỗi: Thiếu API Key Groq.", "sources": []}
+            return {"answer": "❌ Error: Missing Groq API Key.", "sources": []}
 
         try:
             llm = ChatGroq(
@@ -368,13 +351,13 @@ def query_rag_system(question: str, collection_name: str, chat_history: list = N
                 api_key=final_api_key
             )
         except Exception as e:
-            return {"answer": f"Lỗi khởi tạo LLM: {str(e)}", "sources": []}
+            return {"answer": f"Error initializing LLM: {str(e)}", "sources": []}
 
-    # 2. CONTEXTUALIZATION (chỉ khi có history và câu hỏi có đại từ/tham chiếu)
+    # 2. CONTEXTUALIZATION (only when history exists and question has pronouns/references)
     standalone_question = question
     has_history = chat_history and len(chat_history) > 1
     
-    # Chỉ contextualize nếu câu hỏi có dấu hiệu cần ngữ cảnh
+    # Only contextualize if question shows signs of needing it
     need_context = has_history and _needs_contextualization(question)
     
     if need_context:
@@ -398,7 +381,7 @@ def query_rag_system(question: str, collection_name: str, chat_history: list = N
         except Exception as e:
             print(f"⚠️ Contextualization failed: {e}")
 
-    # 3. KẾT NỐI DATABASE
+    # 3. DATABASE CONNECTION
     db = Chroma(
         collection_name=collection_name,
         persist_directory=CHROMA_DIR,
@@ -408,14 +391,14 @@ def query_rag_system(question: str, collection_name: str, chat_history: list = N
     # 4. VECTOR SEARCH (Single query - faster)
     retriever = db.as_retriever(
         search_type="similarity",
-        search_kwargs={"k": k_target * 2}  # Lấy nhiều hơn để filter
+        search_kwargs={"k": k_target * 2}
     )
     
     all_docs = retriever.invoke(standalone_question)
     
     if not all_docs:
         return {
-            "answer": "Tôi không tìm thấy thông tin này trong tài liệu.",
+            "answer": "No relevant information found in the documents.",
             "sources": [],
             "raw_docs": [],
             "pipeline_info": {"retrieval": "no_docs_found"}
@@ -432,7 +415,7 @@ def query_rag_system(question: str, collection_name: str, chat_history: list = N
         raw_score = bm25_scores.get(doc_hash, 0)
         doc.metadata["bm25_score"] = raw_score / max_bm25 if max_bm25 > 0 else 0
 
-    # 6. CROSS-ENCODER RERANKING (thay thế CRAG - nhanh hơn nhiều)
+    # 6. CROSS-ENCODER RERANKING
     pairs = [[standalone_question, doc.page_content] for doc in all_docs]
     rerank_scores = reranker_model.predict(pairs)
     
@@ -457,13 +440,13 @@ def query_rag_system(question: str, collection_name: str, chat_history: list = N
 
     if not final_docs:
         return {
-            "answer": "Tôi không tìm thấy thông tin phù hợp trong tài liệu.",
+            "answer": "No relevant information found in the documents.",
             "sources": [],
             "raw_docs": [],
             "pipeline_info": {"retrieval": "no_relevant_docs"}
         }
 
-    # 7. GENERATE ANSWER (Single LLM call - sử dụng Parent Content)
+    # 7. GENERATE ANSWER (Single LLM call — uses Parent Content)
     context_text = "\n\n---\n\n".join([
         f"[Source: {d.metadata.get('source', 'Unknown')}]\n{d.metadata.get('parent_content', d.page_content)}" 
         for d in final_docs
@@ -487,7 +470,7 @@ def query_rag_system(question: str, collection_name: str, chat_history: list = N
         answer_text = response.content.strip()
             
     except Exception as e:
-        answer_text = f"❌ Lỗi khi gọi API: {str(e)}"
+        answer_text = f"❌ Error calling API: {str(e)}"
 
     source_names = list(set([d.metadata.get("source", "Unknown") for d in final_docs]))
 
